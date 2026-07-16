@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import {
   clearAuthSession,
@@ -11,7 +19,7 @@ import type { AuthSession, AuthUser } from "@/types/auth";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
-type AuthContextValue = {
+export type AuthContextValue = {
   status: AuthStatus;
   user: AuthUser | null;
   accessToken: string | null;
@@ -22,7 +30,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -31,6 +39,7 @@ type AuthProviderProps = {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSessionState] = useState<AuthSession | null>(() => getAuthSession());
   const [status, setStatus] = useState<AuthStatus>(session ? "authenticated" : "loading");
+  const hasAttemptedInitialRestore = useRef(Boolean(session));
 
   useEffect(() => {
     return subscribeToAuthSession((nextSession) => {
@@ -60,7 +69,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
 
-    if (!session) {
+    if (!session && !hasAttemptedInitialRestore.current) {
+      hasAttemptedInitialRestore.current = true;
       void restoreSession();
     }
 
@@ -101,14 +111,3 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider.");
-  }
-
-  return context;
-}
-

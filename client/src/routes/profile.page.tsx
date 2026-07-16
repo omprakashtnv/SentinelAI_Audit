@@ -3,7 +3,7 @@ import { Calendar, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/features/auth/use-auth";
 import { useCurrentUserQuery } from "@/features/auth/auth.hooks";
 
 export function ProfilePage() {
@@ -78,4 +78,3 @@ function ProfileItem({
     </div>
   );
 }
-

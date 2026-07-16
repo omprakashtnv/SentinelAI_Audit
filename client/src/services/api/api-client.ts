@@ -86,13 +86,22 @@ api.interceptors.response.use(
 );
 
 export async function apiRequest<TData>({ path, ...config }: ApiRequestOptions): Promise<TData> {
+  const payload = await apiEnvelopeRequest<TData>({ path, ...config });
+
+  return payload.data;
+}
+
+export async function apiEnvelopeRequest<TData>({
+  path,
+  ...config
+}: ApiRequestOptions): Promise<ApiSuccessResponse<TData>> {
   try {
     const response = await api.request<ApiSuccessResponse<TData>>({
       ...config,
       url: path,
     });
 
-    return response.data.data;
+    return response.data;
   } catch (error) {
     throw normalizeApiError(error);
   }
@@ -111,7 +120,7 @@ export async function publicApiRequest<TData>({ path, ...config }: ApiRequestOpt
   }
 }
 
-async function refreshAuthSession(): Promise<AuthSession> {
+export async function refreshAuthSession(): Promise<AuthSession> {
   refreshSessionPromise ??= publicApiRequest<AuthSession>({
     path: "/auth/refresh-token",
     method: "POST",
@@ -154,4 +163,3 @@ export function normalizeApiError(error: unknown): ApiClientError {
 
   return new ApiClientError("An unknown error occurred.", 0, "UNKNOWN_CLIENT_ERROR");
 }
-

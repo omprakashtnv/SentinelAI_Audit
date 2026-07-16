@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { ThemeToggle } from "@/app/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/features/auth/use-auth";
 
 type NavbarProps = {
   onOpenNavigation: () => void;
@@ -35,8 +35,8 @@ export function Navbar({ onOpenNavigation }: NavbarProps) {
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
-          <Button type="button" variant="outline" className="hidden sm:inline-flex">
-            New audit
+          <Button asChild type="button" variant="outline" className="hidden sm:inline-flex">
+            <Link to="/projects/new">New project</Link>
           </Button>
           <Button asChild type="button" variant="ghost" size="icon" aria-label="Open profile">
             <Link to="/profile">

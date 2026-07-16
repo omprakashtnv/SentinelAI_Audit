@@ -6,11 +6,15 @@ import { RootLayout } from "@/app/layouts/root-layout";
 import { RouteErrorBoundary } from "@/components/feedback/error-boundary";
 import { ProtectedRoute, PublicOnlyRoute } from "@/features/auth/auth-guards";
 import { AuditsPage } from "@/routes/audits.page";
+import { CreateProjectPage } from "@/routes/create-project.page";
 import { DashboardPage } from "@/routes/dashboard.page";
+import { EditProjectPage } from "@/routes/edit-project.page";
 import { ForgotPasswordPage } from "@/routes/forgot-password.page";
 import { LoginPage } from "@/routes/login.page";
 import { NotFoundPage } from "@/routes/not-found.page";
 import { ProfilePage } from "@/routes/profile.page";
+import { ProjectDetailsPage } from "@/routes/project-details.page";
+import { ProjectsPage } from "@/routes/projects.page";
 import { RegisterPage } from "@/routes/register.page";
 import { ReportsPage } from "@/routes/reports.page";
 import { SettingsPage } from "@/routes/settings.page";
@@ -42,6 +46,10 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <Navigate to="/dashboard" replace /> },
               { path: "dashboard", element: <DashboardPage /> },
+              { path: "projects", element: <ProjectsPage /> },
+              { path: "projects/new", element: <CreateProjectPage /> },
+              { path: "projects/:projectId", element: <ProjectDetailsPage /> },
+              { path: "projects/:projectId/edit", element: <EditProjectPage /> },
               { path: "audits", element: <AuditsPage /> },
               { path: "reports", element: <ReportsPage /> },
               { path: "profile", element: <ProfilePage /> },

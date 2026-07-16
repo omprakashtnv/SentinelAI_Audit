@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/features/auth/use-auth";
 import { loginUser, getCurrentUser, registerUser } from "@/services/api/auth";
 import type { LoginFormValues, RegisterFormValues } from "./auth.schemas";
 
@@ -40,4 +40,3 @@ export function useCurrentUserQuery() {
     enabled: isAuthenticated,
   });
 }
-

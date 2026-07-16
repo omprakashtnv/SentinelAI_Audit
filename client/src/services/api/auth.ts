@@ -1,4 +1,4 @@
-import { apiRequest, publicApiRequest } from "@/services/api/api-client";
+import { apiRequest, publicApiRequest, refreshAuthSession } from "@/services/api/api-client";
 import type { AuthSession, AuthUser, LoginRequest, RegisterRequest } from "@/types/auth";
 
 type CurrentUserResponse = {
@@ -22,10 +22,7 @@ export function loginUser(input: LoginRequest): Promise<AuthSession> {
 }
 
 export function refreshUserSession(): Promise<AuthSession> {
-  return publicApiRequest<AuthSession>({
-    path: "/auth/refresh-token",
-    method: "POST",
-  });
+  return refreshAuthSession();
 }
 
 export async function logoutUser(): Promise<void> {
@@ -42,4 +39,3 @@ export async function getCurrentUser(): Promise<AuthUser> {
 
   return response.user;
 }
-

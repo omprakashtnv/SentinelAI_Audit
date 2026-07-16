@@ -1,0 +1,282 @@
+openapi: 3.0.3
+info:
+  title: SentinelAI Project Management API
+  version: 0.1.0
+  description: Project management endpoints. Every project belongs to the authenticated user.
+servers:
+  - url: http://localhost:4000/api
+security:
+  - bearerAuth: []
+paths:
+  /projects:
+    post:
+      summary: Create project
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "201":
+          description: Project created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    get:
+      summary: Get my projects
+      tags: [Projects]
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Authenticated user's active projects.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /projects/dashboard/statistics:
+    get:
+      summary: Get project dashboard statistics
+      tags: [Projects]
+      responses:
+        "200":
+          description: Project dashboard statistics for the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStatisticsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /projects/{projectId}:
+    get:
+      summary: Get single project
+      tags: [Projects]
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Project owned by the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+    patch:
+      summary: Update project
+      tags: [Projects]
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectRequest"
+      responses:
+        "200":
+          description: Project updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+    delete:
+      summary: Soft delete project
+      tags: [Projects]
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Project soft deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteProjectResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/ProjectNotFound"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ProjectId:
+      in: path
+      name: projectId
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Unauthorized:
+      description: Authentication is required.
+    ValidationError:
+      description: Request validation failed.
+    ProjectNotFound:
+      description: Project was not found, is deleted, or is not owned by the authenticated user.
+  schemas:
+    CreateProjectRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+        repositoryUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+    UpdateProjectRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+        repositoryUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+    Project:
+      type: object
+      required: [id, name, description, repositoryUrl, createdAt, updatedAt, deletedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        repositoryUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+    ProjectResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            project:
+              $ref: "#/components/schemas/Project"
+    ProjectListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            projects:
+              type: array
+              items:
+                $ref: "#/components/schemas/Project"
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+    ProjectStatisticsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            statistics:
+              type: object
+              properties:
+                activeProjects:
+                  type: integer
+                deletedProjects:
+                  type: integer
+                totalProjects:
+                  type: integer
+                createdLast7Days:
+                  type: integer
+                createdLast30Days:
+                  type: integer
+                recentlyUpdated:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Project"
+    DeleteProjectResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Project deleted.
+        data:
+          nullable: true

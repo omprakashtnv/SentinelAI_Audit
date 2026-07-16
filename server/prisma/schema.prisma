@@ -1,6 +1,5 @@
 // SentinelAI Prisma schema
 //
-// This schema intentionally contains no application models yet.
 // Add domain models only when the corresponding product module is designed.
 //
 // Naming conventions:
@@ -32,6 +31,7 @@ model User {
   passwordHash  String         @map("password_hash") @db.VarChar(255)
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  projects      Project[]
   refreshTokens RefreshToken[]
 
   @@map("users")
@@ -56,4 +56,21 @@ model RefreshToken {
   @@index([familyId], map: "idx_refresh_tokens_family_id")
   @@index([expiresAt], map: "idx_refresh_tokens_expires_at")
   @@map("refresh_tokens")
+}
+
+model Project {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerId       String    @map("owner_id") @db.Uuid
+  name          String    @db.VarChar(120)
+  description   String?   @db.Text
+  repositoryUrl String?   @map("repository_url") @db.VarChar(2048)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, deletedAt], map: "idx_projects_owner_id_deleted_at")
+  @@index([ownerId, createdAt], map: "idx_projects_owner_id_created_at")
+  @@map("projects")
 }

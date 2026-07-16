@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { LoadingScreen } from "@/components/feedback/loading-screen";
-import { useAuth } from "@/features/auth/auth-context";
+import { useAuth } from "@/features/auth/use-auth";
 
 export function ProtectedRoute() {
   const location = useLocation();
@@ -31,4 +31,3 @@ export function PublicOnlyRoute() {
 
   return <Outlet />;
 }
-

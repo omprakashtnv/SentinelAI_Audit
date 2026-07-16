@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BarChart3, FileText, LayoutDashboard, Settings, ShieldCheck, User, X } from "lucide-react";
+import { BarChart3, FileText, FolderKanban, LayoutDashboard, Settings, ShieldCheck, User, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 const navigationItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Projects", href: "/projects", icon: FolderKanban },
   { label: "Audits", href: "/audits", icon: ShieldCheck },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Profile", href: "/profile", icon: User },
