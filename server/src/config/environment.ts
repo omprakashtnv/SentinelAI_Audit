@@ -1,0 +1,65 @@
+import dotenv from "dotenv";
+import { z } from "zod";
+
+dotenv.config();
+
+const environmentSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  PORT: z.coerce.number().int().positive().max(65535).default(4000),
+  DATABASE_URL: z.string().url(),
+  CORS_ORIGIN: z.string().default("http://localhost:5173"),
+  LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).default("info"),
+  REQUEST_BODY_LIMIT: z.string().default("1mb"),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  SHUTDOWN_GRACE_MS: z.coerce.number().int().positive().default(10_000),
+  JWT_ACCESS_SECRET: z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters."),
+  JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(15 * 60),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  REFRESH_TOKEN_COOKIE_NAME: z.string().min(1).default("sentinelai_refresh_token"),
+  BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
+});
+
+const parsedEnvironment = environmentSchema.safeParse(process.env);
+
+if (!parsedEnvironment.success) {
+  const details = parsedEnvironment.error.issues.map((issue) => ({
+    path: issue.path.join("."),
+    message: issue.message,
+  }));
+
+  throw new Error(`Invalid environment configuration: ${JSON.stringify(details)}`);
+}
+
+const env = parsedEnvironment.data;
+
+export const environment = {
+  nodeEnv: env.NODE_ENV,
+  isDevelopment: env.NODE_ENV === "development",
+  isTest: env.NODE_ENV === "test",
+  isProduction: env.NODE_ENV === "production",
+  port: env.PORT,
+  databaseUrl: env.DATABASE_URL,
+  corsOrigins: env.CORS_ORIGIN.split(",").map((origin) => origin.trim()),
+  logLevel: env.LOG_LEVEL,
+  requestBodyLimit: env.REQUEST_BODY_LIMIT,
+  rateLimit: {
+    windowMs: env.RATE_LIMIT_WINDOW_MS,
+    max: env.RATE_LIMIT_MAX,
+  },
+  shutdownGraceMs: env.SHUTDOWN_GRACE_MS,
+  jwt: {
+    accessSecret: env.JWT_ACCESS_SECRET,
+    accessTokenTtlSeconds: env.JWT_ACCESS_TOKEN_TTL_SECONDS,
+  },
+  refreshToken: {
+    ttlDays: env.REFRESH_TOKEN_TTL_DAYS,
+    ttlMs: env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+    cookieName: env.REFRESH_TOKEN_COOKIE_NAME,
+  },
+  security: {
+    bcryptSaltRounds: env.BCRYPT_SALT_ROUNDS,
+  },
+} as const;
+
+export type Environment = typeof environment;

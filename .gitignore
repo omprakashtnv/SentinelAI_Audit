@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+coverage/
+.turbo/
+.vite/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime and uploads
+tmp/
+temp/
+uploads/
+reports/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Prisma
+server/prisma/migrations/dev/
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+
+# TypeScript
+*.tsbuildinfo
+
+
+
+#Ignore cursor AI rules
+.cursor\rules\codacy.mdc
