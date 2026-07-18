@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { AuthLayout } from "@/app/layouts/auth-layout";
@@ -18,6 +19,13 @@ import { ProjectsPage } from "@/routes/projects.page";
 import { RegisterPage } from "@/routes/register.page";
 import { ReportsPage } from "@/routes/reports.page";
 import { SettingsPage } from "@/routes/settings.page";
+import { UploadRepositoryPage } from "@/routes/upload-repository.page";
+
+const RepositoryExplorerPage = lazy(() =>
+  import("@/routes/repository-explorer.page").then((module) => ({
+    default: module.RepositoryExplorerPage,
+  })),
+);
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +57,15 @@ export const router = createBrowserRouter([
               { path: "projects", element: <ProjectsPage /> },
               { path: "projects/new", element: <CreateProjectPage /> },
               { path: "projects/:projectId", element: <ProjectDetailsPage /> },
+              { path: "projects/:projectId/upload", element: <UploadRepositoryPage /> },
+              {
+                path: "projects/:projectId/repository",
+                element: (
+                  <Suspense fallback={<RouteLoadingFallback />}>
+                    <RepositoryExplorerPage />
+                  </Suspense>
+                ),
+              },
               { path: "projects/:projectId/edit", element: <EditProjectPage /> },
               { path: "audits", element: <AuditsPage /> },
               { path: "reports", element: <ReportsPage /> },
@@ -62,3 +79,11 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+
+function RouteLoadingFallback() {
+  return (
+    <div className="grid min-h-96 place-items-center rounded-lg border border-border bg-card">
+      <div className="text-sm text-muted-foreground">Loading</div>
+    </div>
+  );
+}

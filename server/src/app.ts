@@ -29,7 +29,17 @@ export function createApp(): Express {
       allowedHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
     }),
   );
-  app.use(compression());
+  app.use(
+    compression({
+      filter: (request, response) => {
+        if (request.headers.accept?.includes("text/event-stream")) {
+          return false;
+        }
+
+        return compression.filter(request, response);
+      },
+    }),
+  );
   app.use(cookieParser());
   app.use(express.json({ limit: environment.requestBodyLimit }));
   app.use(express.urlencoded({ extended: true, limit: environment.requestBodyLimit }));

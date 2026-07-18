@@ -24,15 +24,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ScanStatus {
+  QUEUED
+  PARSING
+  INDEXING
+  READY_FOR_AI
+  AI_SCANNING
+  PROCESSING_RESULTS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum FindingStatus {
+  OPEN
+  DISMISSED
+  RESOLVED
+}
+
 model User {
-  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String         @unique(map: "uq_users_email") @db.Citext
-  name          String?        @db.VarChar(120)
-  passwordHash  String         @map("password_hash") @db.VarChar(255)
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
-  projects      Project[]
-  refreshTokens RefreshToken[]
+  id                String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String                   @unique(map: "uq_users_email") @db.Citext
+  name              String?                  @db.VarChar(120)
+  passwordHash      String                   @map("password_hash") @db.VarChar(255)
+  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  githubImports     GitHubRepositoryImport[]
+  projects          Project[]
+  repositoryUploads RepositoryUpload[]
+  refreshTokens     RefreshToken[]
+  scans             Scan[]
 
   @@map("users")
 }
@@ -68,9 +97,121 @@ model Project {
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
 
-  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner             User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  findings          Finding[]
+  githubImports     GitHubRepositoryImport[]
+  repositoryUploads RepositoryUpload[]
+  scans             Scan[]
 
   @@index([ownerId, deletedAt], map: "idx_projects_owner_id_deleted_at")
   @@index([ownerId, createdAt], map: "idx_projects_owner_id_created_at")
   @@map("projects")
+}
+
+model RepositoryUpload {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId        String   @map("project_id") @db.Uuid
+  uploadedByUserId String   @map("uploaded_by_user_id") @db.Uuid
+  originalFilename String   @map("original_filename") @db.VarChar(255)
+  mimeType         String   @map("mime_type") @db.VarChar(120)
+  sizeBytes        Int      @map("size_bytes")
+  extractedPath    String   @map("extracted_path") @db.Text
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedByUser User    @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt], map: "idx_repository_uploads_project_id_created_at")
+  @@index([uploadedByUserId], map: "idx_repository_uploads_uploaded_by_user_id")
+  @@map("repository_uploads")
+}
+
+model GitHubRepositoryImport {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId        String   @map("project_id") @db.Uuid
+  importedByUserId String   @map("imported_by_user_id") @db.Uuid
+  owner            String   @db.VarChar(100)
+  name             String   @db.VarChar(100)
+  repositoryUrl    String   @map("repository_url") @db.VarChar(2048)
+  cloneUrl         String   @map("clone_url") @db.VarChar(2048)
+  defaultBranch    String   @map("default_branch") @db.VarChar(255)
+  commitSha        String   @map("commit_sha") @db.Char(40)
+  localPath        String   @map("local_path") @db.Text
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  importedByUser User    @relation(fields: [importedByUserId], references: [id], onDelete: Cascade)
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt], map: "idx_github_repository_imports_project_id_created_at")
+  @@index([importedByUserId], map: "idx_github_repository_imports_imported_by_user_id")
+  @@map("github_repository_imports")
+}
+
+model Scan {
+  id                   String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId            String     @map("project_id") @db.Uuid
+  requestedByUserId    String     @map("requested_by_user_id") @db.Uuid
+  retryOfScanId        String?    @map("retry_of_scan_id") @db.Uuid
+  status               ScanStatus @default(QUEUED)
+  progress             Int        @default(0)
+  attempt              Int        @default(1)
+  sourceType           String?    @map("source_type") @db.VarChar(20)
+  sourceRef            String?    @map("source_ref") @db.Text
+  totalFilesDiscovered Int        @default(0) @map("total_files_discovered")
+  parsedFiles          Int        @default(0) @map("parsed_files")
+  skippedFiles         Int        @default(0) @map("skipped_files")
+  totalParsedBytes     Int        @default(0) @map("total_parsed_bytes")
+  securityFindings     Json       @default("[]") @map("security_findings")
+  securitySummary      Json       @default("{}") @map("security_summary")
+  failureReason        String?    @map("failure_reason") @db.Text
+  startedAt            DateTime?  @map("started_at") @db.Timestamptz(6)
+  completedAt          DateTime?  @map("completed_at") @db.Timestamptz(6)
+  cancelledAt          DateTime?  @map("cancelled_at") @db.Timestamptz(6)
+  elapsedMs            Int?       @map("elapsed_ms")
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  findings        Finding[]
+  requestedByUser User      @relation(fields: [requestedByUserId], references: [id], onDelete: Cascade)
+  retryOfScan     Scan?     @relation("ScanRetries", fields: [retryOfScanId], references: [id], onDelete: SetNull)
+  retries         Scan[]    @relation("ScanRetries")
+
+  @@index([projectId, createdAt], map: "idx_scans_project_id_created_at")
+  @@index([projectId, status], map: "idx_scans_project_id_status")
+  @@index([requestedByUserId], map: "idx_scans_requested_by_user_id")
+  @@index([retryOfScanId], map: "idx_scans_retry_of_scan_id")
+  @@map("scans")
+}
+
+model Finding {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId      String          @map("project_id") @db.Uuid
+  scanId         String?         @map("scan_id") @db.Uuid
+  ruleId         String?         @map("rule_id") @db.VarChar(160)
+  severity       FindingSeverity
+  status         FindingStatus   @default(OPEN)
+  title          String          @db.VarChar(180)
+  description    String          @db.Text
+  file           String          @db.Text
+  line           Int
+  category       String?         @db.VarChar(80)
+  owasp          String?         @db.VarChar(160)
+  recommendation String?         @db.Text
+  confidence     String?         @db.VarChar(20)
+  metadata       Json            @default("{}")
+  dismissedAt    DateTime?       @map("dismissed_at") @db.Timestamptz(6)
+  resolvedAt     DateTime?       @map("resolved_at") @db.Timestamptz(6)
+  deletedAt      DateTime?       @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scan    Scan?   @relation(fields: [scanId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, status, severity], map: "idx_findings_project_id_status_severity")
+  @@index([projectId, createdAt], map: "idx_findings_project_id_created_at")
+  @@index([scanId], map: "idx_findings_scan_id")
+  @@index([deletedAt], map: "idx_findings_deleted_at")
+  @@map("findings")
 }

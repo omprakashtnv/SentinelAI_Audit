@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileArchive, FolderGit2, Github, Pencil, Trash2, UploadCloud } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -10,13 +10,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProjectDeleteDialog } from "@/features/projects/components/project-delete-dialog";
 import { ProjectErrorState } from "@/features/projects/components/project-error-state";
 import { useDeleteProjectMutation, useProjectQuery } from "@/features/projects/project.hooks";
+import { useRepositorySourceQuery } from "@/features/repository-explorer/repository-explorer.hooks";
+import { ProjectAuditPanel } from "@/features/scans/components/project-audit-panel";
 import { ApiClientError } from "@/services/api/api-client";
+import type { RepositorySource } from "@/types/repository";
 
 export function ProjectDetailsPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const projectQuery = useProjectQuery(projectId);
+  const repositorySourceQuery = useRepositorySourceQuery(projectId);
   const deleteMutation = useDeleteProjectMutation();
   const project = projectQuery.data;
 
@@ -63,6 +67,18 @@ export function ProjectDetailsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild type="button" variant="outline">
+            <Link to={`/projects/${project.id}/upload`}>
+              <UploadCloud className="size-4" aria-hidden="true" />
+              Upload
+            </Link>
+          </Button>
+          <Button asChild type="button" variant="outline">
+            <Link to={`/projects/${project.id}/repository`}>
+              <FolderGit2 className="size-4" aria-hidden="true" />
+              Explore
+            </Link>
+          </Button>
+          <Button asChild type="button" variant="outline">
             <Link to={`/projects/${project.id}/edit`}>
               <Pencil className="size-4" aria-hidden="true" />
               Edit
@@ -88,28 +104,16 @@ export function ProjectDetailsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Repository</CardTitle>
-            <CardDescription>Source location attached to this project.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {project.repositoryUrl ? (
-              <Button asChild type="button" variant="outline" className="w-full">
-                <a href={project.repositoryUrl} target="_blank" rel="noreferrer">
-                  <ExternalLink className="size-4" aria-hidden="true" />
-                  Open repository
-                </a>
-              </Button>
-            ) : (
-              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
-                <p className="text-sm font-medium text-foreground">No repository linked</p>
-                <p className="mt-2 text-sm text-muted-foreground">Add one from the edit page.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <RepositoryCard
+          projectId={project.id}
+          projectRepositoryUrl={project.repositoryUrl}
+          source={repositorySourceQuery.data}
+          isLoading={repositorySourceQuery.isLoading}
+        />
       </div>
+
+      <ProjectAuditPanel projectId={project.id} />
+
       <ProjectDeleteDialog
         open={isDeleteDialogOpen}
         projectName={project.name}
@@ -118,6 +122,89 @@ export function ProjectDetailsPage() {
         onConfirm={handleDelete}
       />
     </div>
+  );
+}
+
+function RepositoryCard({
+  projectId,
+  projectRepositoryUrl,
+  source,
+  isLoading,
+}: {
+  projectId: string;
+  projectRepositoryUrl: string | null;
+  source: RepositorySource | undefined;
+  isLoading: boolean;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Repository</CardTitle>
+        <CardDescription>Latest source attached through upload or import.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ) : source ? (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-muted/20 px-3 py-3">
+              <div className="flex items-center gap-2">
+                {source.sourceType === "github" ? (
+                  <Github className="size-4 text-muted-foreground" aria-hidden="true" />
+                ) : (
+                  <FileArchive className="size-4 text-muted-foreground" aria-hidden="true" />
+                )}
+                <span className="text-sm font-semibold text-foreground">{source.displayName}</span>
+                <Badge variant="secondary">{source.sourceType === "github" ? "GitHub" : "ZIP"}</Badge>
+              </div>
+              <div className="mt-3 grid gap-2 text-sm">
+                {source.defaultBranch ? <DetailRow label="Branch" value={source.defaultBranch} /> : null}
+                {source.commitSha ? <DetailRow label="Commit" value={source.commitSha.slice(0, 12)} /> : null}
+                {source.sizeBytes !== null ? <DetailRow label="Size" value={formatFileSize(source.sizeBytes)} /> : null}
+                <DetailRow label="Attached" value={formatDate(source.createdAt)} />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Button asChild type="button" variant="outline" className="w-full">
+                <Link to={`/projects/${projectId}/repository`}>
+                  <FolderGit2 className="size-4" aria-hidden="true" />
+                  Explore repository
+                </Link>
+              </Button>
+              {source.repositoryUrl ? (
+                <Button asChild type="button" variant="outline" className="w-full">
+                  <a href={source.repositoryUrl} target="_blank" rel="noreferrer">
+                    <ExternalLink className="size-4" aria-hidden="true" />
+                    Open on GitHub
+                  </a>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        ) : projectRepositoryUrl ? (
+          <Button asChild type="button" variant="outline" className="w-full">
+            <a href={projectRepositoryUrl} target="_blank" rel="noreferrer">
+              <ExternalLink className="size-4" aria-hidden="true" />
+              Open repository
+            </a>
+          </Button>
+        ) : (
+          <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center">
+            <p className="text-sm font-medium text-foreground">No repository attached</p>
+            <p className="mt-2 text-sm text-muted-foreground">Upload a ZIP or import a GitHub repository.</p>
+            <Button asChild type="button" variant="outline" className="mt-4">
+              <Link to={`/projects/${projectId}/upload`}>
+                <UploadCloud className="size-4" aria-hidden="true" />
+                Attach repository
+              </Link>
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -140,6 +227,18 @@ function ProjectDetailsSkeleton() {
       </div>
     </div>
   );
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDate(value: string) {

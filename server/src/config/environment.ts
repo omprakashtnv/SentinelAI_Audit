@@ -18,6 +18,25 @@ const environmentSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
   REFRESH_TOKEN_COOKIE_NAME: z.string().min(1).default("sentinelai_refresh_token"),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
+  UPLOAD_TEMP_DIR: z.string().min(1).default("tmp/uploads/zips"),
+  UPLOAD_EXTRACT_DIR: z.string().min(1).default("tmp/uploads/extracted"),
+  UPLOAD_MAX_ZIP_SIZE_BYTES: z.coerce.number().int().positive().default(100 * 1024 * 1024),
+  UPLOAD_MAX_EXTRACTED_SIZE_BYTES: z.coerce.number().int().positive().default(500 * 1024 * 1024),
+  UPLOAD_MAX_ZIP_ENTRIES: z.coerce.number().int().positive().default(10_000),
+  GITHUB_IMPORT_BASE_DIR: z.string().min(1).default("tmp/imports/github"),
+  GITHUB_IMPORT_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+  REPOSITORY_PARSER_MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(1024 * 1024),
+  REPOSITORY_PARSER_MAX_FILES: z.coerce.number().int().positive().default(20_000),
+  REPOSITORY_PARSER_MAX_DEPTH: z.coerce.number().int().positive().default(50),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_MODEL: z.string().min(1).default("gpt-4.1"),
+  OPENAI_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
+  OPENAI_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
+  OPENAI_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
+  OPENAI_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(4_000),
+  OPENAI_STREAMING_ENABLED: z.coerce.boolean().default(false),
+  SENTINEL_DEMO_MODE: z.coerce.boolean().default(false),
+  SENTINEL_DEMO_FINDINGS_ENABLED: z.coerce.boolean().default(false),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
@@ -59,6 +78,35 @@ export const environment = {
   },
   security: {
     bcryptSaltRounds: env.BCRYPT_SALT_ROUNDS,
+  },
+  upload: {
+    tempDir: env.UPLOAD_TEMP_DIR,
+    extractDir: env.UPLOAD_EXTRACT_DIR,
+    maxZipSizeBytes: env.UPLOAD_MAX_ZIP_SIZE_BYTES,
+    maxExtractedSizeBytes: env.UPLOAD_MAX_EXTRACTED_SIZE_BYTES,
+    maxZipEntries: env.UPLOAD_MAX_ZIP_ENTRIES,
+  },
+  githubImport: {
+    baseDir: env.GITHUB_IMPORT_BASE_DIR,
+    timeoutMs: env.GITHUB_IMPORT_TIMEOUT_MS,
+  },
+  repositoryParser: {
+    maxFileSizeBytes: env.REPOSITORY_PARSER_MAX_FILE_SIZE_BYTES,
+    maxFiles: env.REPOSITORY_PARSER_MAX_FILES,
+    maxDepth: env.REPOSITORY_PARSER_MAX_DEPTH,
+  },
+  openai: {
+    apiKey: env.OPENAI_API_KEY,
+    model: env.OPENAI_MODEL,
+    timeoutMs: env.OPENAI_TIMEOUT_MS,
+    maxRetries: env.OPENAI_MAX_RETRIES,
+    temperature: env.OPENAI_TEMPERATURE,
+    maxOutputTokens: env.OPENAI_MAX_OUTPUT_TOKENS,
+    streamingEnabled: env.OPENAI_STREAMING_ENABLED,
+  },
+  demo: {
+    enabled: env.SENTINEL_DEMO_MODE,
+    findingsEnabled: env.SENTINEL_DEMO_FINDINGS_ENABLED,
   },
 } as const;
 

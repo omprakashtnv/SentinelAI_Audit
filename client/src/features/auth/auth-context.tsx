@@ -3,7 +3,6 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -39,7 +38,6 @@ type AuthProviderProps = {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSessionState] = useState<AuthSession | null>(() => getAuthSession());
   const [status, setStatus] = useState<AuthStatus>(session ? "authenticated" : "loading");
-  const hasAttemptedInitialRestore = useRef(Boolean(session));
 
   useEffect(() => {
     return subscribeToAuthSession((nextSession) => {
@@ -66,18 +64,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         clearAuthSession();
+        setStatus("unauthenticated");
       }
     }
 
-    if (!session && !hasAttemptedInitialRestore.current) {
-      hasAttemptedInitialRestore.current = true;
+    if (!session && status === "loading") {
       void restoreSession();
     }
 
     return () => {
       isMounted = false;
     };
-  }, [session]);
+  }, [session, status]);
 
   const setSession = useCallback((nextSession: AuthSession) => {
     setAuthSession(nextSession);
