@@ -7,8 +7,7 @@ type AsyncRequestHandler = (
 ) => Promise<unknown> | unknown;
 
 export function asyncHandler(handler: AsyncRequestHandler): RequestHandler {
-  return (request, response, next) => {
+  return (request: Request, response: Response, next: NextFunction): void => {
     Promise.resolve(handler(request, response, next)).catch(next);
   };
 }
-
