@@ -584,7 +584,7 @@ DELETE /projects/:projectId/findings/:findingId
 
 ## License
 
-Copyright © 2026 OM.
+Copyright © 2026 Om Prakash Gupta.
 
 All rights reserved.
 
