@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
-  BarChart3,
   CheckCircle2,
   Clock3,
   FileWarning,
@@ -15,8 +14,6 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -183,7 +180,7 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
 
       <SecurityOverview analytics={analytics} />
 
-      <div className="grid gap-4">
+      {/* <div className="grid gap-4">
         <DashboardPanel
           title="Risk trend"
           description="Security score movement across recent scans."
@@ -208,7 +205,7 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
             </ResponsiveContainer>
           </ChartFrame>
         </DashboardPanel>
-      </div>
+      </div> */}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <DashboardPanel title="Severity distribution" description="Findings by severity." icon={AlertTriangle}>

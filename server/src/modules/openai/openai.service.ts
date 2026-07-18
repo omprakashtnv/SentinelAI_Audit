@@ -5,10 +5,23 @@ import { environment } from "../../config/environment";
 import { ApiError } from "../../shared/errors/api-error";
 import { aiResponseValidatorService, AiResponseValidatorService } from "../ai-response-validator";
 import type { SecurityFinding } from "../rule-based-scanner";
-import { aiSecurityScanResultSchema, type AiSecurityFindingOutput } from "./openai.schemas";
-import type { OpenAIClient, OpenAISecurityScanInput, OpenAISecurityScanResult, OpenAIServiceConfig } from "./openai.types";
+import {
+  aiSecurityScanResultSchema,
+  openAIFixEnhancementSchema,
+  type AiSecurityFindingOutput,
+  type OpenAIFixEnhancementOutput,
+} from "./openai.schemas";
+import type {
+  OpenAIClient,
+  OpenAIFixEnhancementInput,
+  OpenAIFixEnhancementResult,
+  OpenAISecurityScanInput,
+  OpenAISecurityScanResult,
+  OpenAIServiceConfig,
+} from "./openai.types";
 
 const SECURITY_SCAN_RESPONSE_FORMAT_NAME = "sentinel_security_findings";
+const FIX_ENHANCEMENT_RESPONSE_FORMAT_NAME = "sentinel_fix_enhancement";
 
 export class OpenAIService {
   private client: OpenAIClient | null;
@@ -43,6 +56,51 @@ export class OpenAIService {
       return input.stream ?? this.config.streamingEnabled
         ? await this.streamSecurityChunk(input)
         : await this.createSecurityChunkResponse(input);
+    } catch (error) {
+      throw this.normalizeError(error);
+    }
+  }
+
+  public async enhanceSecurityFix(input: OpenAIFixEnhancementInput): Promise<OpenAIFixEnhancementResult> {
+    if (!this.isConfigured()) {
+      throw new ApiError({
+        statusCode: 503,
+        code: "OPENAI_NOT_CONFIGURED",
+        message: "OpenAI API key is not configured.",
+      });
+    }
+
+    try {
+      const response = await this.getClient().responses.create(
+        {
+          model: this.config.model,
+          instructions: [
+            "You are SentinelAI's secure fix enhancement engine.",
+            "Return validated JSON only. Never return markdown, prose wrappers, code fences, comments, or fields outside the schema.",
+            "Enhance the explanation, recommendation, and generatedFix for the supplied security finding.",
+            "The generatedFix field must contain code only, not a unified diff and not markdown.",
+            "Keep the fix minimal, production-ready, and aligned with the supplied template. Do not invent unrelated files or dependencies.",
+          ].join("\n"),
+          input: JSON.stringify(input, null, 2),
+          text: {
+            format: zodTextFormat(openAIFixEnhancementSchema, FIX_ENHANCEMENT_RESPONSE_FORMAT_NAME),
+          },
+          temperature: Math.min(this.config.temperature, 0.3),
+          max_output_tokens: this.config.maxOutputTokens,
+          store: false,
+        },
+        {
+          maxRetries: this.config.maxRetries,
+          timeout: this.config.timeoutMs,
+        },
+      );
+      const enhancement = this.parseFixEnhancementPayload(this.getResponsePayload(response));
+
+      return {
+        responseId: response.id ?? null,
+        model: response.model ?? this.config.model,
+        enhancement,
+      };
     } catch (error) {
       throw this.normalizeError(error);
     }
@@ -266,6 +324,34 @@ export class OpenAIService {
     }
 
     return textParts.length > 0 ? textParts.join("") : null;
+  }
+
+  private parseFixEnhancementPayload(payload: unknown): OpenAIFixEnhancementOutput {
+    const parsedPayload = typeof payload === "string" ? this.parseJsonPayload(payload) : payload;
+    const validation = openAIFixEnhancementSchema.safeParse(parsedPayload);
+
+    if (!validation.success) {
+      throw new ApiError({
+        statusCode: 502,
+        code: "OPENAI_FIX_ENHANCEMENT_INVALID",
+        message: "OpenAI fix enhancement response did not match the required schema.",
+        details: validation.error.flatten(),
+      });
+    }
+
+    return validation.data;
+  }
+
+  private parseJsonPayload(payload: string): unknown {
+    try {
+      return JSON.parse(payload);
+    } catch {
+      throw new ApiError({
+        statusCode: 502,
+        code: "OPENAI_FIX_ENHANCEMENT_MALFORMED_JSON",
+        message: "OpenAI fix enhancement response was not valid JSON.",
+      });
+    }
   }
 
   private normalizeError(error: unknown): Error {

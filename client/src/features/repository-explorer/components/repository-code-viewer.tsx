@@ -1,11 +1,10 @@
 import Editor from "@monaco-editor/react";
 import { AlertCircle, Code2, Copy, FileCode2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useTheme } from "@/app/theme/theme-provider";
+import { useMonacoTheme } from "@/hooks/use-monaco-theme";
 import type { RepositoryFileContent, RepositoryFileMetadata, RepositoryLanguage } from "@/types/repository";
 
 type RepositoryCodeViewerProps = {
@@ -114,33 +113,6 @@ function EditorLoading() {
       <Skeleton className="h-4 w-8/12" />
     </div>
   );
-}
-
-function useMonacoTheme() {
-  const { theme } = useTheme();
-  const [systemDark, setSystemDark] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (event: MediaQueryListEvent) => setSystemDark(event.matches);
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  return useMemo(() => {
-    if (theme === "dark" || (theme === "system" && systemDark)) {
-      return "vs-dark";
-    }
-
-    return "light";
-  }, [systemDark, theme]);
 }
 
 function toMonacoLanguage(language: RepositoryLanguage) {

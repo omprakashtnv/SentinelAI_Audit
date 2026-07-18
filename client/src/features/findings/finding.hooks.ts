@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteProjectFinding,
   dismissProjectFinding,
+  getProjectFindingFixPreview,
   getProjectFinding,
   getProjectFindingExplanation,
   getProjectFindings,
@@ -17,6 +18,8 @@ export const findingKeys = {
   detail: (projectId: string, findingId: string) => [...findingKeys.project(projectId), "detail", findingId] as const,
   explanation: (projectId: string, findingId: string) =>
     [...findingKeys.detail(projectId, findingId), "explanation"] as const,
+  fixPreview: (projectId: string, findingId: string) =>
+    [...findingKeys.detail(projectId, findingId), "fix-preview"] as const,
 };
 
 export function useProjectFindingQuery(projectId: string | undefined, findingId: string | undefined) {
@@ -37,6 +40,17 @@ export function useProjectFindingExplanationQuery(projectId: string | undefined,
         ? findingKeys.explanation(projectId, findingId)
         : [...findingKeys.all, "explanation", "missing"],
     queryFn: () => getProjectFindingExplanation(projectId ?? "", findingId ?? ""),
+    enabled: Boolean(projectId && findingId),
+  });
+}
+
+export function useProjectFindingFixPreviewQuery(projectId: string | undefined, findingId: string | undefined) {
+  return useQuery({
+    queryKey:
+      projectId && findingId
+        ? findingKeys.fixPreview(projectId, findingId)
+        : [...findingKeys.all, "fix-preview", "missing"],
+    queryFn: () => getProjectFindingFixPreview(projectId ?? "", findingId ?? ""),
     enabled: Boolean(projectId && findingId),
   });
 }

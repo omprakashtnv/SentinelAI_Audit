@@ -84,6 +84,18 @@ export const getFindingExplanation: RequestHandler = async (request, response) =
   });
 };
 
+export const getFindingFixPreview: RequestHandler = async (request, response) => {
+  const fixPreview = await findingService.getFindingFixPreview(
+    getAuthenticatedUserId(request),
+    getRequiredParam(request, "projectId"),
+    getRequiredParam(request, "findingId"),
+  );
+
+  sendSuccess(response, {
+    data: { fixPreview },
+  });
+};
+
 export const updateFinding: RequestHandler = async (request, response) => {
   const finding = await findingService.updateFinding(
     getAuthenticatedUserId(request),

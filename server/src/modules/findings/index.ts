@@ -9,6 +9,7 @@ export {
   updateFindingSchema,
 } from "./finding.schemas";
 export { findingRepository, FindingRepository } from "./finding.repository";
+export { findingFixPreviewService, FindingFixPreviewService } from "./finding-fix-preview.service";
 export { findingService, FindingService } from "./finding.service";
 export { toPublicFinding } from "./finding.types";
 export type {
@@ -19,6 +20,8 @@ export type {
   UpdateFindingInput,
 } from "./finding.schemas";
 export type {
+  FindingFixPreview,
+  FindingFixPreviewEnhancement,
   FindingListMeta,
   FindingListResult,
   PublicFinding,

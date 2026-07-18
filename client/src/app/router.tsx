@@ -12,6 +12,7 @@ import { DashboardPage } from "@/routes/dashboard.page";
 import { EditProjectPage } from "@/routes/edit-project.page";
 import { ForgotPasswordPage } from "@/routes/forgot-password.page";
 import { FindingDetailsPage } from "@/routes/finding-details.page";
+import { FixPreviewPage } from "@/routes/fix-preview.page";
 import { LoginPage } from "@/routes/login.page";
 import { NotFoundPage } from "@/routes/not-found.page";
 import { ProfilePage } from "@/routes/profile.page";
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
               { path: "projects/:projectId", element: <ProjectDetailsPage /> },
               { path: "projects/:projectId/security", element: <RepositorySecurityPage /> },
               { path: "projects/:projectId/findings/:findingId", element: <FindingDetailsPage /> },
+              { path: "projects/:projectId/findings/:findingId/fix-preview", element: <FixPreviewPage /> },
               { path: "projects/:projectId/upload", element: <UploadRepositoryPage /> },
               {
                 path: "projects/:projectId/repository",

@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  GitPullRequestArrow,
   ExternalLink,
   FileCode2,
   Gauge,
@@ -168,6 +169,12 @@ function FindingHeader({
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button asChild type="button" variant="outline">
+                <Link to={`/projects/${projectId}/findings/${finding.id}/fix-preview`}>
+                  <GitPullRequestArrow className="size-4" aria-hidden="true" />
+                  Preview fix
+                </Link>
+              </Button>
               <Button type="button" variant="outline" disabled={isResolving} onClick={onResolve}>
                 <CheckCircle2 className="size-4" aria-hidden="true" />
                 Resolve

@@ -1,4 +1,5 @@
 import { apiEnvelopeRequest, apiRequest } from "@/services/api/api-client";
+import type { FindingFixPreview } from "@/types/fix-preview";
 import type { Finding, FindingExplanation, FindingListFilters, FindingListMeta } from "@/types/finding";
 
 type FindingResponse = {
@@ -11,6 +12,10 @@ type FindingListResponse = {
 
 type FindingExplanationResponse = {
   explanation: FindingExplanation;
+};
+
+type FindingFixPreviewResponse = {
+  fixPreview: FindingFixPreview;
 };
 
 export async function getProjectFinding(projectId: string, findingId: string): Promise<Finding> {
@@ -30,6 +35,17 @@ export async function getProjectFindingExplanation(
   });
 
   return response.explanation;
+}
+
+export async function getProjectFindingFixPreview(
+  projectId: string,
+  findingId: string,
+): Promise<FindingFixPreview> {
+  const response = await apiRequest<FindingFixPreviewResponse>({
+    path: `/projects/${projectId}/findings/${findingId}/fix-preview`,
+  });
+
+  return response.fixPreview;
 }
 
 export async function getProjectFindings(

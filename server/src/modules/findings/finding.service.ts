@@ -2,9 +2,10 @@ import { ApiError } from "../../shared/errors/api-error";
 import { findingExplanationService, FindingExplanationService, type FindingExplanation } from "../finding-explanation";
 import { ProjectRepository, projectRepository } from "../projects/project.repository";
 import { ScanRepository, scanRepository } from "../scans/scan.repository";
+import { FindingFixPreviewService, findingFixPreviewService } from "./finding-fix-preview.service";
 import { FindingRepository, findingRepository } from "./finding.repository";
 import type { CreateFindingInput, GetFindingsQuery, UpdateFindingInput } from "./finding.schemas";
-import { toPublicFinding, type FindingListResult, type PublicFinding } from "./finding.types";
+import { toPublicFinding, type FindingFixPreview, type FindingListResult, type PublicFinding } from "./finding.types";
 
 export class FindingService {
   public constructor(
@@ -12,6 +13,7 @@ export class FindingService {
     private readonly scans: ScanRepository,
     private readonly findings: FindingRepository,
     private readonly explanations: FindingExplanationService,
+    private readonly fixPreviews: FindingFixPreviewService,
   ) {}
 
   public async createFinding(ownerId: string, projectId: string, input: CreateFindingInput): Promise<PublicFinding> {
@@ -59,6 +61,17 @@ export class FindingService {
     const finding = await this.getFinding(ownerId, projectId, findingId);
 
     return this.explanations.explain(finding);
+  }
+
+  public async getFindingFixPreview(
+    ownerId: string,
+    projectId: string,
+    findingId: string,
+  ): Promise<FindingFixPreview> {
+    const finding = await this.getFinding(ownerId, projectId, findingId);
+    const explanation = this.explanations.explain(finding);
+
+    return this.fixPreviews.buildPreview(finding, explanation);
   }
 
   public async updateFinding(
@@ -143,4 +156,5 @@ export const findingService = new FindingService(
   scanRepository,
   findingRepository,
   findingExplanationService,
+  findingFixPreviewService,
 );

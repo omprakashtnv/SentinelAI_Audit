@@ -9,6 +9,7 @@ import {
   dismissFinding,
   getFinding,
   getFindingExplanation,
+  getFindingFixPreview,
   getFindings,
   resolveFinding,
   updateFinding,
@@ -129,6 +130,11 @@ projectRouter.get(
   "/:projectId/findings/:findingId/explanation",
   validateRequest({ params: findingParamsSchema }),
   asyncHandler(getFindingExplanation),
+);
+projectRouter.get(
+  "/:projectId/findings/:findingId/fix-preview",
+  validateRequest({ params: findingParamsSchema }),
+  asyncHandler(getFindingFixPreview),
 );
 projectRouter.get(
   "/:projectId/findings/:findingId",
