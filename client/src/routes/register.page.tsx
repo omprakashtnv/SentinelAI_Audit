@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -10,10 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRegisterMutation } from "@/features/auth/auth.hooks";
 import { registerFormSchema, type RegisterFormValues } from "@/features/auth/auth.schemas";
+import { cn } from "@/lib/utils";
 import { ApiClientError } from "@/services/api/api-client";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const registerMutation = useRegisterMutation();
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
@@ -56,14 +60,21 @@ export function RegisterPage() {
           </FormField>
 
           <FormField label="Password" error={form.formState.errors.password?.message}>
-            <Input id="password" type="password" autoComplete="new-password" {...form.register("password")} />
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              isVisible={showPassword}
+              onToggle={() => setShowPassword((value) => !value)}
+              {...form.register("password")}
+            />
           </FormField>
 
           <FormField label="Confirm password" error={form.formState.errors.confirmPassword?.message}>
-            <Input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               autoComplete="new-password"
+              isVisible={showConfirmPassword}
+              onToggle={() => setShowConfirmPassword((value) => !value)}
               {...form.register("confirmPassword")}
             />
           </FormField>
@@ -85,6 +96,30 @@ export function RegisterPage() {
   );
 }
 
+type PasswordInputProps = React.ComponentProps<typeof Input> & {
+  isVisible: boolean;
+  onToggle: () => void;
+};
+
+function PasswordInput({ isVisible, onToggle, className, ...props }: PasswordInputProps) {
+  return (
+    <div className="relative">
+      <Input {...props} type={isVisible ? "text" : "password"} className={cn("pr-10", className)} />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="absolute right-1 top-1/2 size-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        aria-label={isVisible ? "Hide password" : "Show password"}
+        title={isVisible ? "Hide password" : "Show password"}
+        onClick={onToggle}
+      >
+        {isVisible ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+      </Button>
+    </div>
+  );
+}
+
 function FormField({
   label,
   error,
@@ -102,4 +137,3 @@ function FormField({
     </div>
   );
 }
-
