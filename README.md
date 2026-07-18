@@ -584,4 +584,10 @@ DELETE /projects/:projectId/findings/:findingId
 
 ## License
 
-This project is currently private.
+Copyright © 2026 OM.
+
+All rights reserved.
+
+This repository is provided for evaluation and demonstration purposes only.
+No part of this project may be copied, modified, distributed, or used without
+prior written permission from the author.
