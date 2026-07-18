@@ -24,8 +24,10 @@ pnpm-debug.log*
 # Runtime and uploads
 tmp/
 temp/
-uploads/
 reports/
+server/tmp/
+server/uploads/
+client/uploads/
 
 # Database
 *.db
