@@ -7,18 +7,32 @@ import {
   retryProjectScan,
 } from "@/services/api/scans";
 import type { Scan } from "@/types/scan";
+import type { ScanStatus } from "@/types/scan";
 
 export const scanKeys = {
   all: ["scans"] as const,
   project: (projectId: string) => [...scanKeys.all, "project", projectId] as const,
 };
 
+const ACTIVE_SCAN_STATUSES: ScanStatus[] = [
+  "QUEUED",
+  "PARSING",
+  "INDEXING",
+  "READY_FOR_AI",
+  "AI_SCANNING",
+  "PROCESSING_RESULTS",
+];
+
 export function useProjectScansQuery(projectId: string | undefined) {
   return useQuery({
     queryKey: projectId ? scanKeys.project(projectId) : [...scanKeys.all, "missing"],
     queryFn: () => getProjectScans(projectId ?? ""),
     enabled: Boolean(projectId),
-    refetchInterval: 2_500,
+    refetchInterval: (query) => {
+      const latestScan = query.state.data?.scans[0];
+
+      return latestScan && ACTIVE_SCAN_STATUSES.includes(latestScan.status) ? 5_000 : false;
+    },
   });
 }
 

@@ -159,26 +159,6 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
             Monitor repository risk, scan history, vulnerability patterns, and critical files.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <SegmentedControl
-            label="Status"
-            value={statusFilter}
-            options={["OPEN", "DISMISSED", "RESOLVED", "ALL"]}
-            onChange={(value) => {
-              setStatusFilter(value as FindingStatus | "ALL");
-              resetFindingsPage();
-            }}
-          />
-          <SegmentedControl
-            label="Severity"
-            value={severityFilter}
-            options={["ALL", ...FINDING_SEVERITIES]}
-            onChange={(value) => {
-              setSeverityFilter(value as FindingSeverity | "ALL");
-              resetFindingsPage();
-            }}
-          />
-        </div>
       </motion.div>
 
       <SecurityOverview analytics={analytics} />
@@ -298,25 +278,48 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
 
       <div className="grid gap-4">
         <DashboardPanel title="Findings" description="Filtered security findings with direct triage actions." icon={Search}>
-          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-              <Input
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  resetFindingsPage();
-                }}
-                placeholder="Search findings, files, OWASP"
-                className="pl-9"
+          <div className="mb-4 space-y-3">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="relative w-full xl:max-w-xl">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    resetFindingsPage();
+                  }}
+                  placeholder="Search findings, files, OWASP"
+                  className="pl-9"
+                />
+              </div>
+              <SegmentedControl
+                label="Sort"
+                value={sortMode}
+                options={["severity", "newest", "file"]}
+                onChange={(value) => setSortMode(value as SortMode)}
               />
             </div>
-            <SegmentedControl
-              label="Sort"
-              value={sortMode}
-              options={["severity", "newest", "file"]}
-              onChange={(value) => setSortMode(value as SortMode)}
-            />
+
+            <div className="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+              <SegmentedControl
+                label="Status"
+                value={statusFilter}
+                options={["OPEN", "DISMISSED", "RESOLVED", "ALL"]}
+                onChange={(value) => {
+                  setStatusFilter(value as FindingStatus | "ALL");
+                  resetFindingsPage();
+                }}
+              />
+              <SegmentedControl
+                label="Severity"
+                value={severityFilter}
+                options={["ALL", ...FINDING_SEVERITIES]}
+                onChange={(value) => {
+                  setSeverityFilter(value as FindingSeverity | "ALL");
+                  resetFindingsPage();
+                }}
+              />
+            </div>
           </div>
 
           {paginatedFindingsQuery.isError ? (
@@ -590,6 +593,8 @@ function FindingRow({
   const fileLocation = `${finding.file}:${finding.line}`;
   const category = finding.category ? formatFindingOption(finding.category) : "Uncategorized";
   const confidence = finding.confidence ?? "UNKNOWN";
+  const canResolve = finding.status !== "RESOLVED";
+  const canDismiss = finding.status !== "DISMISSED";
 
   return (
     <article className="overflow-hidden rounded-lg border border-border bg-background transition-colors hover:bg-muted/25">
@@ -626,16 +631,22 @@ function FindingRow({
           <Button asChild type="button" size="sm" variant="outline" className="w-full justify-center">
             <Link to={`/projects/${finding.projectId}/findings/${finding.id}`}>Details</Link>
           </Button>
-          <div className="grid grid-cols-2 gap-2 xl:grid-cols-1">
-            <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => onResolve(finding.id)}>
-              <CheckCircle2 className="size-3.5" aria-hidden="true" />
-              Resolve
-            </Button>
-            <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => onDismiss(finding.id)}>
-              <AlertTriangle className="size-3.5" aria-hidden="true" />
-              Dismiss
-            </Button>
-          </div>
+          {canResolve || canDismiss ? (
+            <div className="grid grid-cols-2 gap-2 xl:grid-cols-1">
+              {canResolve ? (
+                <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => onResolve(finding.id)}>
+                  <CheckCircle2 className="size-3.5" aria-hidden="true" />
+                  Resolve
+                </Button>
+              ) : null}
+              {canDismiss ? (
+                <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => onDismiss(finding.id)}>
+                  <AlertTriangle className="size-3.5" aria-hidden="true" />
+                  Dismiss
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           <Button type="button" size="sm" variant="ghost" className="w-full justify-center text-muted-foreground" onClick={() => onDelete(finding.id)}>
             <Trash2 className="size-3.5" aria-hidden="true" />
             Delete

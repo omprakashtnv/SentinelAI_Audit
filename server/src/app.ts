@@ -49,6 +49,7 @@ export function createApp(): Express {
       limit: environment.rateLimit.max,
       standardHeaders: "draft-7",
       legacyHeaders: false,
+      skip: (request) => ["GET", "HEAD", "OPTIONS"].includes(request.method),
       message: {
         success: false,
         error: {

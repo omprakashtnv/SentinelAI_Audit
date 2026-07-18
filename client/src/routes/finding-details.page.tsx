@@ -145,6 +145,9 @@ function FindingHeader({
   onResolve: () => void;
   onDismiss: () => void;
 }) {
+  const canResolve = finding.status !== "RESOLVED";
+  const canDismiss = finding.status !== "DISMISSED";
+
   return (
     <div className="flex flex-col gap-4">
       <Button asChild type="button" variant="ghost" className="w-fit">
@@ -175,14 +178,18 @@ function FindingHeader({
                   Preview fix
                 </Link>
               </Button>
-              <Button type="button" variant="outline" disabled={isResolving} onClick={onResolve}>
-                <CheckCircle2 className="size-4" aria-hidden="true" />
-                Resolve
-              </Button>
-              <Button type="button" variant="outline" disabled={isDismissing} onClick={onDismiss}>
-                <AlertTriangle className="size-4" aria-hidden="true" />
-                Dismiss
-              </Button>
+              {canResolve ? (
+                <Button type="button" variant="outline" disabled={isResolving} onClick={onResolve}>
+                  <CheckCircle2 className="size-4" aria-hidden="true" />
+                  Resolve
+                </Button>
+              ) : null}
+              {canDismiss ? (
+                <Button type="button" variant="outline" disabled={isDismissing} onClick={onDismiss}>
+                  <AlertTriangle className="size-4" aria-hidden="true" />
+                  Dismiss
+                </Button>
+              ) : null}
             </div>
           </div>
         </CardHeader>

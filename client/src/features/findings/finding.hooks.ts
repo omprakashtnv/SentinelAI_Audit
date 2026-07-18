@@ -60,7 +60,6 @@ export function useProjectFindingsQuery(projectId: string | undefined, filters: 
     queryKey: projectId ? findingKeys.list(projectId, filters) : [...findingKeys.all, "missing"],
     queryFn: () => getProjectFindings(projectId ?? "", filters),
     enabled: Boolean(projectId),
-    refetchInterval: 5_000,
   });
 }
 
