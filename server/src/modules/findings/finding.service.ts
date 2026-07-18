@@ -40,6 +40,7 @@ export class FindingService {
         total: result.total,
         totalPages: Math.max(1, Math.ceil(result.total / query.limit)),
       },
+      summary: result.summary,
     };
   }
 

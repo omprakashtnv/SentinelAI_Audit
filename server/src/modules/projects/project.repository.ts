@@ -2,9 +2,10 @@ import type { Prisma, Project } from "@prisma/client";
 
 import { prisma } from "../../db";
 import type { CreateProjectInput, GetProjectsQuery, UpdateProjectInput } from "./project.schemas";
+import type { ProjectWithRepositorySources } from "./project.types";
 
 type ProjectListResult = {
-  projects: Project[];
+  projects: ProjectWithRepositorySources[];
   total: number;
 };
 
@@ -14,8 +15,19 @@ type ProjectDashboardCounts = {
   totalProjects: number;
   createdLast7Days: number;
   createdLast30Days: number;
-  recentlyUpdated: Project[];
+  recentlyUpdated: ProjectWithRepositorySources[];
 };
+
+const latestRepositorySourceInclude = {
+  githubImports: {
+    orderBy: { createdAt: "desc" },
+    take: 1,
+  },
+  repositoryUploads: {
+    orderBy: { createdAt: "desc" },
+    take: 1,
+  },
+} satisfies Prisma.ProjectInclude;
 
 export class ProjectRepository {
   public create(ownerId: string, input: CreateProjectInput): Promise<Project> {
@@ -49,6 +61,7 @@ export class ProjectRepository {
     const [projects, total] = await prisma.$transaction([
       prisma.project.findMany({
         where,
+        include: latestRepositorySourceInclude,
         orderBy: { updatedAt: "desc" },
         skip,
         take: query.limit,
@@ -59,13 +72,14 @@ export class ProjectRepository {
     return { projects, total };
   }
 
-  public findActiveByIdAndOwner(projectId: string, ownerId: string): Promise<Project | null> {
+  public findActiveByIdAndOwner(projectId: string, ownerId: string): Promise<ProjectWithRepositorySources | null> {
     return prisma.project.findFirst({
       where: {
         id: projectId,
         ownerId,
         deletedAt: null,
       },
+      include: latestRepositorySourceInclude,
     });
   }
 
@@ -156,6 +170,7 @@ export class ProjectRepository {
           ownerId,
           deletedAt: null,
         },
+        include: latestRepositorySourceInclude,
         orderBy: { updatedAt: "desc" },
         take: 5,
       }),
@@ -173,4 +188,3 @@ export class ProjectRepository {
 }
 
 export const projectRepository = new ProjectRepository();
-

@@ -1,4 +1,4 @@
-import { ExternalLink, MoreHorizontal } from "lucide-react";
+import { ExternalLink, FileArchive, GitBranch, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { HighlightText } from "@/components/data-display/highlight-text";
@@ -43,8 +43,33 @@ export function ProjectTable({ projects, searchQuery = "", onDelete, deletingPro
               </p>
             </div>
 
-            <div>
-              {project.repositoryUrl ? (
+            <div className="min-w-0">
+              {project.repository?.type === "github" ? (
+                <a
+                  href={project.repository.repositoryUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex max-w-full items-center gap-2 truncate text-sm text-primary hover:underline"
+                  title={project.repository.repositoryUrl}
+                >
+                  <GitBranch className="size-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">
+                    <HighlightText query={searchQuery}>{project.repository.label}</HighlightText>
+                  </span>
+                  <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
+                </a>
+              ) : project.repository?.type === "zip" ? (
+                <div
+                  className="inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-sm text-foreground"
+                  title={`${project.repository.label} (${formatBytes(project.repository.sizeBytes)})`}
+                >
+                  <FileArchive className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span className="truncate">
+                    <HighlightText query={searchQuery}>{project.repository.label}</HighlightText>
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(project.repository.sizeBytes)}</span>
+                </div>
+              ) : project.repositoryUrl ? (
                 <a
                   href={project.repositoryUrl}
                   target="_blank"
@@ -96,4 +121,21 @@ function formatDate(value: string) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }

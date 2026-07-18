@@ -55,6 +55,7 @@ export const getFindings: RequestHandler = async (request, response) => {
   sendSuccess(response, {
     data: {
       findings: result.findings,
+      summary: result.summary,
     },
     meta: result.meta,
   });

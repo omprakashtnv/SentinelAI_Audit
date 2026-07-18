@@ -4,9 +4,25 @@ import { prisma } from "../../db";
 import type { SecurityFinding } from "../rule-based-scanner";
 import type { CreateFindingInput, GetFindingsQuery, UpdateFindingInput } from "./finding.schemas";
 
+const FINDING_SEVERITIES = [
+  FindingSeverity.CRITICAL,
+  FindingSeverity.HIGH,
+  FindingSeverity.MEDIUM,
+  FindingSeverity.LOW,
+  FindingSeverity.INFO,
+] as const;
+
+const FINDING_STATUSES = [FindingStatus.OPEN, FindingStatus.DISMISSED, FindingStatus.RESOLVED] as const;
+
 export type FindingListRepositoryResult = {
   findings: Finding[];
   total: number;
+  summary: {
+    total: number;
+    bySeverity: Record<FindingSeverity, number>;
+    byOpenSeverity: Record<FindingSeverity, number>;
+    byStatus: Record<FindingStatus, number>;
+  };
 };
 
 export class FindingRepository {
@@ -63,33 +79,19 @@ export class FindingRepository {
     ownerId: string,
     query: GetFindingsQuery,
   ): Promise<FindingListRepositoryResult> {
-    const where: Prisma.FindingWhereInput = {
-      projectId,
-      deletedAt: null,
-      project: {
-        ownerId,
-        deletedAt: null,
-      },
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.severity ? { severity: query.severity } : {}),
-      ...(query.scanId ? { scanId: query.scanId } : {}),
-      ...(query.category ? { category: query.category } : {}),
-      ...(query.owasp ? { owasp: query.owasp } : {}),
-      ...(query.search
-        ? {
-            OR: [
-              { title: { contains: query.search, mode: "insensitive" } },
-              { description: { contains: query.search, mode: "insensitive" } },
-              { file: { contains: query.search, mode: "insensitive" } },
-              { category: { contains: query.search, mode: "insensitive" } },
-              { owasp: { contains: query.search, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-    };
+    const where = this.buildListWhere(projectId, ownerId, query);
     const skip = (query.page - 1) * query.limit;
+    const severityCountQueries = FINDING_SEVERITIES.map((severity) =>
+      prisma.finding.count({ where: { AND: [where, { severity }] } }),
+    );
+    const openSeverityCountQueries = FINDING_SEVERITIES.map((severity) =>
+      prisma.finding.count({ where: { AND: [where, { severity }, { status: FindingStatus.OPEN }] } }),
+    );
+    const statusCountQueries = FINDING_STATUSES.map((status) =>
+      prisma.finding.count({ where: { AND: [where, { status }] } }),
+    );
 
-    const [findings, total] = await prisma.$transaction([
+    const [findings, total, ...summaryCounts] = await prisma.$transaction([
       prisma.finding.findMany({
         where,
         orderBy: [{ severity: "asc" }, { createdAt: "desc" }],
@@ -97,9 +99,27 @@ export class FindingRepository {
         take: query.limit,
       }),
       prisma.finding.count({ where }),
+      ...severityCountQueries,
+      ...openSeverityCountQueries,
+      ...statusCountQueries,
     ]);
+    const severityCounts = summaryCounts.slice(0, FINDING_SEVERITIES.length);
+    const openSeverityCounts = summaryCounts.slice(
+      FINDING_SEVERITIES.length,
+      FINDING_SEVERITIES.length * 2,
+    );
+    const statusCounts = summaryCounts.slice(FINDING_SEVERITIES.length * 2);
 
-    return { findings, total };
+    return {
+      findings,
+      total,
+      summary: {
+        total,
+        bySeverity: this.toSeverityCounts(severityCounts),
+        byOpenSeverity: this.toSeverityCounts(openSeverityCounts),
+        byStatus: this.toStatusCounts(statusCounts),
+      },
+    };
   }
 
   public findByIdProjectAndOwner(findingId: string, projectId: string, ownerId: string): Promise<Finding | null> {
@@ -214,6 +234,55 @@ export class FindingRepository {
 
   private toFindingSeverity(severity: SecurityFinding["severity"]): FindingSeverity {
     return FindingSeverity[severity];
+  }
+
+  private buildListWhere(
+    projectId: string,
+    ownerId: string,
+    query: GetFindingsQuery,
+  ): Prisma.FindingWhereInput {
+    return {
+      projectId,
+      deletedAt: null,
+      project: {
+        ownerId,
+        deletedAt: null,
+      },
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.severity ? { severity: query.severity } : {}),
+      ...(query.scanId ? { scanId: query.scanId } : {}),
+      ...(query.category ? { category: query.category } : {}),
+      ...(query.owasp ? { owasp: query.owasp } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { title: { contains: query.search, mode: "insensitive" } },
+              { description: { contains: query.search, mode: "insensitive" } },
+              { file: { contains: query.search, mode: "insensitive" } },
+              { category: { contains: query.search, mode: "insensitive" } },
+              { owasp: { contains: query.search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
+  }
+
+  private toSeverityCounts(counts: number[]): Record<FindingSeverity, number> {
+    return {
+      [FindingSeverity.CRITICAL]: counts[0] ?? 0,
+      [FindingSeverity.HIGH]: counts[1] ?? 0,
+      [FindingSeverity.MEDIUM]: counts[2] ?? 0,
+      [FindingSeverity.LOW]: counts[3] ?? 0,
+      [FindingSeverity.INFO]: counts[4] ?? 0,
+    };
+  }
+
+  private toStatusCounts(counts: number[]): Record<FindingStatus, number> {
+    return {
+      [FindingStatus.OPEN]: counts[0] ?? 0,
+      [FindingStatus.DISMISSED]: counts[1] ?? 0,
+      [FindingStatus.RESOLVED]: counts[2] ?? 0,
+    };
   }
 }
 

@@ -108,9 +108,9 @@ export function DashboardPage() {
                       </p>
                       <p
                         className="mt-1 truncate text-xs text-muted-foreground"
-                        title={project.repositoryUrl ?? "No repository linked"}
+                        title={getProjectRepositoryLabel(project)}
                       >
-                        {project.repositoryUrl ?? "No repository linked"}
+                        {getProjectRepositoryLabel(project)}
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground">{formatDate(project.updatedAt)}</p>
@@ -152,6 +152,14 @@ export function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function getProjectRepositoryLabel(project: { repository?: { label: string; type: string } | null; repositoryUrl: string | null }) {
+  if (project.repository) {
+    return project.repository.type === "zip" ? `${project.repository.label} uploaded` : project.repository.label;
+  }
+
+  return project.repositoryUrl ?? "No repository linked";
 }
 
 function DashboardSkeleton() {

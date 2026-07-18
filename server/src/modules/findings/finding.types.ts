@@ -31,9 +31,17 @@ export type FindingListMeta = {
   totalPages: number;
 };
 
+export type FindingListSummary = {
+  total: number;
+  bySeverity: Record<FindingSeverity, number>;
+  byOpenSeverity: Record<FindingSeverity, number>;
+  byStatus: Record<FindingStatus, number>;
+};
+
 export type FindingListResult = {
   findings: PublicFinding[];
   meta: FindingListMeta;
+  summary: FindingListSummary;
 };
 
 export type FindingFixPreviewEnhancement = {

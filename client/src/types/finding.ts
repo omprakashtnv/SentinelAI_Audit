@@ -64,6 +64,13 @@ export type FindingListMeta = {
   totalPages: number;
 };
 
+export type FindingListSummary = {
+  total: number;
+  bySeverity: Record<FindingSeverity, number>;
+  byOpenSeverity: Record<FindingSeverity, number>;
+  byStatus: Record<FindingStatus, number>;
+};
+
 export type FindingListFilters = {
   page?: number;
   limit?: number;

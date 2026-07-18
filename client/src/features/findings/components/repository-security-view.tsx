@@ -32,7 +32,7 @@ import {
 import { useProjectFindingsQuery } from "@/features/findings/finding.hooks";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
-import type { Finding, FindingSeverity, FindingStatus } from "@/types/finding";
+import type { Finding, FindingListSummary, FindingSeverity, FindingStatus } from "@/types/finding";
 
 type RepositorySecurityViewProps = {
   projectId: string;
@@ -94,7 +94,10 @@ export function RepositorySecurityView({ projectId }: RepositorySecurityViewProp
     [rawFindings, sortMode],
   );
   const groupedFindings = useMemo(() => groupFindings(filteredFindings, groupMode), [filteredFindings, groupMode]);
-  const summary = useMemo(() => summarizeFindings(filteredFindings), [filteredFindings]);
+  const summary = useMemo(
+    () => summarizeFindings(filteredFindings, findingsQuery.data?.summary),
+    [filteredFindings, findingsQuery.data?.summary],
+  );
   const meta = findingsQuery.data?.meta;
 
   function resetPage() {
@@ -131,7 +134,7 @@ export function RepositorySecurityView({ projectId }: RepositorySecurityViewProp
         <SecurityMetric label="Open" value={summary.open} tone="warning" />
         <SecurityMetric label="Critical" value={summary.critical} tone="danger" />
         <SecurityMetric label="High" value={summary.high} tone="danger" />
-        <SecurityMetric label="Folders" value={summary.folders} tone="neutral" />
+        <SecurityMetric label="Folders shown" value={summary.folders} tone="neutral" />
         <SecurityMetric label="Total" value={summary.total} tone="neutral" />
       </div>
 
@@ -266,7 +269,7 @@ function FindingGroup({
           <h2 className="truncate text-sm font-semibold text-foreground" title={group.label}>
             <HighlightText query={searchQuery}>{group.label}</HighlightText>
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">{group.findings.length} findings</p>
+          <p className="mt-1 text-xs text-muted-foreground">{group.findings.length} shown on this page</p>
         </div>
         <SeverityStack findings={group.findings} />
       </div>
@@ -477,12 +480,12 @@ function sortFindings(findings: Finding[], sortMode: SortMode) {
   });
 }
 
-function summarizeFindings(findings: Finding[]) {
+function summarizeFindings(findings: Finding[], summary?: FindingListSummary) {
   return {
-    total: findings.length,
-    open: findings.filter((finding) => finding.status === "OPEN").length,
-    critical: findings.filter((finding) => finding.severity === "CRITICAL").length,
-    high: findings.filter((finding) => finding.severity === "HIGH").length,
+    total: summary?.total ?? findings.length,
+    open: summary?.byStatus.OPEN ?? findings.filter((finding) => finding.status === "OPEN").length,
+    critical: summary?.bySeverity.CRITICAL ?? findings.filter((finding) => finding.severity === "CRITICAL").length,
+    high: summary?.bySeverity.HIGH ?? findings.filter((finding) => finding.severity === "HIGH").length,
     folders: new Set(findings.map((finding) => getFolderName(finding.file))).size,
   };
 }

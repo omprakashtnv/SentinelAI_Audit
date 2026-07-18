@@ -1,8 +1,23 @@
+export type ProjectRepositorySource =
+  | {
+      type: "github";
+      label: string;
+      repositoryUrl: string;
+      attachedAt: string;
+    }
+  | {
+      type: "zip";
+      label: string;
+      sizeBytes: number;
+      attachedAt: string;
+    };
+
 export type Project = {
   id: string;
   name: string;
   description: string | null;
   repositoryUrl: string | null;
+  repository: ProjectRepositorySource | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -41,4 +56,3 @@ export type ProjectDashboardStatistics = {
   createdLast30Days: number;
   recentlyUpdated: Project[];
 };
-

@@ -1,6 +1,12 @@
 import { apiEnvelopeRequest, apiRequest } from "@/services/api/api-client";
 import type { FindingFixPreview } from "@/types/fix-preview";
-import type { Finding, FindingExplanation, FindingListFilters, FindingListMeta } from "@/types/finding";
+import type {
+  Finding,
+  FindingExplanation,
+  FindingListFilters,
+  FindingListMeta,
+  FindingListSummary,
+} from "@/types/finding";
 
 type FindingResponse = {
   finding: Finding;
@@ -8,6 +14,7 @@ type FindingResponse = {
 
 type FindingListResponse = {
   findings: Finding[];
+  summary?: FindingListSummary;
 };
 
 type FindingExplanationResponse = {
@@ -54,6 +61,7 @@ export async function getProjectFindings(
 ): Promise<{
   findings: Finding[];
   meta: FindingListMeta;
+  summary: FindingListSummary;
 }> {
   const response = await apiEnvelopeRequest<FindingListResponse>({
     path: `/projects/${projectId}/findings`,
@@ -69,14 +77,23 @@ export async function getProjectFindings(
     },
   });
 
-  return {
-    findings: response.data.findings,
-    meta: (response.meta ?? {
+  const fallbackMeta = {
       page: filters.page ?? 1,
       limit: filters.limit ?? response.data.findings.length,
       total: response.data.findings.length,
       totalPages: 1,
-    }) as FindingListMeta,
+    } satisfies FindingListMeta;
+  const meta = (response.meta ?? fallbackMeta) as FindingListMeta;
+
+  return {
+    findings: response.data.findings,
+    meta,
+    summary: response.data.summary ?? {
+      total: meta.total,
+      bySeverity: countBySeverity(response.data.findings),
+      byOpenSeverity: countBySeverity(response.data.findings.filter((finding) => finding.status === "OPEN")),
+      byStatus: countByStatus(response.data.findings),
+    },
   };
 }
 
@@ -103,4 +120,22 @@ export async function deleteProjectFinding(projectId: string, findingId: string)
     path: `/projects/${projectId}/findings/${findingId}`,
     method: "DELETE",
   });
+}
+
+function countBySeverity(findings: Finding[]): FindingListSummary["bySeverity"] {
+  return {
+    CRITICAL: findings.filter((finding) => finding.severity === "CRITICAL").length,
+    HIGH: findings.filter((finding) => finding.severity === "HIGH").length,
+    MEDIUM: findings.filter((finding) => finding.severity === "MEDIUM").length,
+    LOW: findings.filter((finding) => finding.severity === "LOW").length,
+    INFO: findings.filter((finding) => finding.severity === "INFO").length,
+  };
+}
+
+function countByStatus(findings: Finding[]): FindingListSummary["byStatus"] {
+  return {
+    OPEN: findings.filter((finding) => finding.status === "OPEN").length,
+    DISMISSED: findings.filter((finding) => finding.status === "DISMISSED").length,
+    RESOLVED: findings.filter((finding) => finding.status === "RESOLVED").length,
+  };
 }

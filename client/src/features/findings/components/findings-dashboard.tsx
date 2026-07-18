@@ -49,7 +49,7 @@ import { useProjectScansQuery } from "@/features/scans/scan.hooks";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 import { ApiClientError } from "@/services/api/api-client";
-import type { Finding, FindingSeverity, FindingStatus } from "@/types/finding";
+import type { Finding, FindingListSummary, FindingSeverity, FindingStatus } from "@/types/finding";
 import type { Scan } from "@/types/scan";
 
 type FindingsDashboardProps = {
@@ -104,7 +104,11 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
     [paginatedFindingsQuery.data?.findings, sortMode],
   );
   const scans = scansQuery.data?.scans ?? [];
-  const analytics = useMemo(() => buildSecurityAnalytics(analyticsFindings, scans), [analyticsFindings, scans]);
+  const analyticsSummary = analyticsFindingsQuery.data?.summary;
+  const analytics = useMemo(
+    () => buildSecurityAnalytics(analyticsFindings, scans, analyticsSummary),
+    [analyticsFindings, scans, analyticsSummary],
+  );
   const findingsMeta = paginatedFindingsQuery.data?.meta;
 
   function resetFindingsPage() {
@@ -690,10 +694,10 @@ function SegmentedControl({
 
 type SecurityAnalytics = ReturnType<typeof buildSecurityAnalytics>;
 
-function buildSecurityAnalytics(findings: Finding[], scans: Scan[]) {
+function buildSecurityAnalytics(findings: Finding[], scans: Scan[], summary?: FindingListSummary) {
   const openFindings = findings.filter((finding) => finding.status === "OPEN");
-  const counts = countSeverities(findings);
-  const openCounts = countSeverities(openFindings);
+  const counts = summary?.bySeverity ?? countSeverities(findings);
+  const openCounts = summary?.byOpenSeverity ?? countSeverities(openFindings);
   const securityScore = calculateSecurityScore(openCounts);
   const owaspCounts = countBy(findings, (finding) => finding.owasp ?? "Unmapped");
   const vulnerabilityCounts = countBy(findings, (finding) => finding.title);
@@ -703,8 +707,8 @@ function buildSecurityAnalytics(findings: Finding[], scans: Scan[]) {
     counts,
     openCounts,
     securityScore,
-    openFindings: openFindings.length,
-    totalFindings: findings.length,
+    openFindings: summary?.byStatus.OPEN ?? openFindings.length,
+    totalFindings: summary?.total ?? findings.length,
     criticalHighFindings: openCounts.CRITICAL + openCounts.HIGH,
     severityChartData: FINDING_SEVERITIES.map((severity) => ({
       severity,
