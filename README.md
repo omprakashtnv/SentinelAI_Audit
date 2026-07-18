@@ -2,7 +2,7 @@
 
 SentinelAI is a production-style SaaS security auditing platform for source code repositories. Users can create projects, upload a ZIP file or import a public GitHub repository, run a security scan, review findings, inspect source files, view security dashboards, and open guided fix previews.
 
-The application is designed for a hackathon demo, but the codebase follows a production-minded architecture: typed APIs, Prisma persistence, centralized configuration, secure authentication, reusable scan services, and a modern React dashboard.
+The codebase follows a production-minded architecture: typed APIs, Prisma persistence, centralized configuration, secure authentication, reusable scan services, and a modern React dashboard.
 
 ## What It Does
 
@@ -15,7 +15,7 @@ The application is designed for a hackathon demo, but the codebase follows a pro
 - Optionally enhances scan/fix output with OpenAI when an API key is configured.
 - Stores scans, findings, statuses, severities, and repository metadata in PostgreSQL.
 - Shows dashboards, charts, repository security views, finding details, and fix previews.
-- Provides a hackathon-safe demo mode when OpenAI is unavailable.
+- Provides a rule-based fallback mode when OpenAI is unavailable.
 
 ## Tech Stack
 
@@ -54,7 +54,7 @@ Database:
 
 - PostgreSQL
 - Prisma migrations
-- Recommended hosted database for demo: Neon Postgres
+- Recommended hosted database: Neon Postgres
 
 Deployment:
 
@@ -147,14 +147,14 @@ sentinelai/
 
 The app does not require OpenAI to work. If `OPENAI_API_KEY` is configured, SentinelAI can enhance generated explanations, recommendations, and fixes. If the key is missing, invalid, or quota-limited, the application falls back to the built-in rule-based scanner and template-based fix engine.
 
-For hackathon demos, keep:
+For deterministic non-AI scans, keep:
 
 ```env
 SENTINEL_DEMO_MODE=true
 SENTINEL_DEMO_FINDINGS_ENABLED=true
 ```
 
-This keeps the demo stable even when OpenAI is unavailable.
+This keeps scans stable even when OpenAI is unavailable.
 
 ## Architecture
 
@@ -346,7 +346,7 @@ pnpm preview      # Preview production build
 pnpm typecheck    # TypeScript check
 ```
 
-## Demo Flow
+## Product Workflow
 
 1. Register a user.
 2. Create a project.
@@ -363,7 +363,7 @@ pnpm typecheck    # TypeScript check
 
 ## Deployment
 
-The recommended hackathon deployment is:
+The recommended deployment is:
 
 - Frontend on Vercel
 - Backend on Render
@@ -552,13 +552,13 @@ DELETE /projects/:projectId/findings/:findingId
 - CORS must be configured to the deployed frontend origin.
 - OpenAI failures do not break the scan pipeline.
 
-## Demo Limitations
+## Operational Notes
 
 - Render free services can cold start after inactivity.
 - Render filesystem storage is ephemeral unless persistent disk is configured.
 - Uploaded ZIPs and cloned repositories should be treated as temporary runtime files.
-- For a smooth demo, upload/import and scan during the same active session.
-- Keep demo findings enabled when OpenAI quota is unavailable.
+- For reliable repository access, add durable object storage or a persistent disk.
+- Keep fallback findings enabled when OpenAI is unavailable.
 
 ## Useful Documentation
 
@@ -584,4 +584,4 @@ DELETE /projects/:projectId/findings/:findingId
 
 ## License
 
-This project is currently private and intended for hackathon/demo use.
+This project is currently private.
