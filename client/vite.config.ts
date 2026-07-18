@@ -14,6 +14,31 @@ export default defineConfig({
             return "monaco";
           }
 
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom") || id.includes("node_modules/react-router")) {
+            return "react-vendor";
+          }
+
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
+            return "charts";
+          }
+
+          if (id.includes("node_modules/framer-motion")) {
+            return "animation";
+          }
+
+          if (id.includes("node_modules/lucide-react")) {
+            return "icons";
+          }
+
+          if (
+            id.includes("node_modules/@tanstack") ||
+            id.includes("node_modules/axios") ||
+            id.includes("node_modules/react-hook-form") ||
+            id.includes("node_modules/zod")
+          ) {
+            return "app-vendor";
+          }
+
           return undefined;
         },
       },

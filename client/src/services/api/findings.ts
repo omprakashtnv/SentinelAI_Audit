@@ -1,5 +1,5 @@
 import { apiEnvelopeRequest, apiRequest } from "@/services/api/api-client";
-import type { Finding, FindingListFilters, FindingListMeta } from "@/types/finding";
+import type { Finding, FindingExplanation, FindingListFilters, FindingListMeta } from "@/types/finding";
 
 type FindingResponse = {
   finding: Finding;
@@ -8,6 +8,29 @@ type FindingResponse = {
 type FindingListResponse = {
   findings: Finding[];
 };
+
+type FindingExplanationResponse = {
+  explanation: FindingExplanation;
+};
+
+export async function getProjectFinding(projectId: string, findingId: string): Promise<Finding> {
+  const response = await apiRequest<FindingResponse>({
+    path: `/projects/${projectId}/findings/${findingId}`,
+  });
+
+  return response.finding;
+}
+
+export async function getProjectFindingExplanation(
+  projectId: string,
+  findingId: string,
+): Promise<FindingExplanation> {
+  const response = await apiRequest<FindingExplanationResponse>({
+    path: `/projects/${projectId}/findings/${findingId}/explanation`,
+  });
+
+  return response.explanation;
+}
 
 export async function getProjectFindings(
   projectId: string,
@@ -63,4 +86,3 @@ export async function deleteProjectFinding(projectId: string, findingId: string)
     method: "DELETE",
   });
 }
-

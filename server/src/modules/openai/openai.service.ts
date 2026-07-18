@@ -12,6 +12,7 @@ const SECURITY_SCAN_RESPONSE_FORMAT_NAME = "sentinel_security_findings";
 
 export class OpenAIService {
   private client: OpenAIClient | null;
+  private disabledReason: string | null = null;
 
   public constructor(
     private readonly config: OpenAIServiceConfig = environment.openai,
@@ -22,7 +23,11 @@ export class OpenAIService {
   }
 
   public isConfigured(): boolean {
-    return Boolean(this.config.apiKey || this.client);
+    return !this.disabledReason && Boolean(this.config.apiKey || this.client);
+  }
+
+  public getDisabledReason(): string | null {
+    return this.disabledReason;
   }
 
   public async scanSecurityChunk(input: OpenAISecurityScanInput): Promise<OpenAISecurityScanResult> {
@@ -277,10 +282,42 @@ export class OpenAIService {
     }
 
     if (error instanceof OpenAI.APIError) {
+      const statusCode = error.status && error.status >= 400 && error.status < 600 ? error.status : 502;
+
+      if (statusCode === 401) {
+        this.disabledReason = "OPENAI_INVALID_API_KEY";
+
+        return new ApiError({
+          statusCode,
+          code: "OPENAI_INVALID_API_KEY",
+          message: "OpenAI API key is invalid or no longer active.",
+          details: {
+            requestId: error.requestID,
+            status: error.status,
+            type: error.name,
+          },
+        });
+      }
+
+      if (statusCode === 429) {
+        this.disabledReason = "OPENAI_QUOTA_EXCEEDED";
+
+        return new ApiError({
+          statusCode,
+          code: "OPENAI_QUOTA_EXCEEDED",
+          message: "OpenAI quota or rate limit was exceeded.",
+          details: {
+            requestId: error.requestID,
+            status: error.status,
+            type: error.name,
+          },
+        });
+      }
+
       return new ApiError({
-        statusCode: error.status && error.status >= 400 && error.status < 600 ? error.status : 502,
+        statusCode,
         code: "OPENAI_API_ERROR",
-        message: error.message,
+        message: "OpenAI request failed.",
         details: {
           requestId: error.requestID,
           status: error.status,

@@ -385,7 +385,8 @@ export class ScanService {
     chunks: RepositoryChunk[];
   }): Promise<SecurityFinding[]> {
     if (!this.openAI.isConfigured()) {
-      logger.info("Skipping AI security scan because OpenAI is not configured.", {
+      logger.info("Skipping AI security scan because OpenAI is unavailable.", {
+        reason: this.openAI.getDisabledReason() ?? "OPENAI_NOT_CONFIGURED",
         projectId: input.projectId,
       });
       this.publishScanProgress(input.scanId, ScanStatus.AI_SCANNING, "Skipping AI scan", 75);
@@ -434,11 +435,18 @@ export class ScanService {
           prompt,
         });
       } catch (error) {
-        logger.warn("AI security scan unavailable; continuing with non-AI scan results.", {
-          error,
+        const logDetails = {
+          ...this.createAiUnavailableLogDetails(error),
           projectId: input.projectId,
           scanId: input.scanId,
-        });
+        };
+
+        if (this.isExpectedAiFallback(error)) {
+          logger.info("AI security scan unavailable; continuing with non-AI scan results.", logDetails);
+        } else {
+          logger.warn("AI security scan unavailable; continuing with non-AI scan results.", logDetails);
+        }
+
         this.publishScanProgress(
           input.scanId,
           ScanStatus.AI_SCANNING,
@@ -465,6 +473,38 @@ export class ScanService {
     }
 
     return findings;
+  }
+
+  private isExpectedAiFallback(error: unknown): boolean {
+    return (
+      error instanceof ApiError &&
+      ["OPENAI_INVALID_API_KEY", "OPENAI_QUOTA_EXCEEDED", "OPENAI_NOT_CONFIGURED", "OPENAI_TIMEOUT"].includes(error.code)
+    );
+  }
+
+  private createAiUnavailableLogDetails(error: unknown): Record<string, unknown> {
+    if (error instanceof ApiError) {
+      return {
+        code: error.code,
+        statusCode: error.statusCode,
+        details: error.details,
+      };
+    }
+
+    if (error instanceof Error) {
+      return {
+        errorName: error.name,
+        message: this.redactSensitiveText(error.message),
+      };
+    }
+
+    return {
+      errorName: "UnknownError",
+    };
+  }
+
+  private redactSensitiveText(value: string): string {
+    return value.replace(/sk-[A-Za-z0-9_-]+/g, "sk-***");
   }
 
   private applyDemoFindingsIfNeeded(input: {

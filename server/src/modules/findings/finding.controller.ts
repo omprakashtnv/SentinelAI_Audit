@@ -72,6 +72,18 @@ export const getFinding: RequestHandler = async (request, response) => {
   });
 };
 
+export const getFindingExplanation: RequestHandler = async (request, response) => {
+  const explanation = await findingService.getFindingExplanation(
+    getAuthenticatedUserId(request),
+    getRequiredParam(request, "projectId"),
+    getRequiredParam(request, "findingId"),
+  );
+
+  sendSuccess(response, {
+    data: { explanation },
+  });
+};
+
 export const updateFinding: RequestHandler = async (request, response) => {
   const finding = await findingService.updateFinding(
     getAuthenticatedUserId(request),
@@ -124,4 +136,3 @@ export const deleteFinding: RequestHandler = async (request, response) => {
     data: null,
   });
 };
-

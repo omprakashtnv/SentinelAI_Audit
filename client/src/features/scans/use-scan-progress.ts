@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { environment } from "@/config/environment";
+import { findingKeys } from "@/features/findings/finding.hooks";
+import { scanKeys } from "@/features/scans/scan.hooks";
 import { getAccessToken } from "@/services/api/auth-session-store";
 import type { ScanProgressSnapshot, ScanStatus } from "@/types/scan";
 
@@ -20,6 +23,7 @@ export function useScanProgress(
   const [progress, setProgress] = useState<ScanProgressSnapshot | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!projectId || !scanId || !enabled) {
@@ -29,6 +33,8 @@ export function useScanProgress(
       return;
     }
 
+    const activeProjectId = projectId;
+    const activeScanId = scanId;
     const accessToken = getAccessToken();
 
     if (!accessToken) {
@@ -42,7 +48,7 @@ export function useScanProgress(
     async function connect() {
       try {
         setError(null);
-        const response = await fetch(`${environment.apiBaseUrl}/projects/${projectId}/scans/${scanId}/progress`, {
+        const response = await fetch(`${environment.apiBaseUrl}/projects/${activeProjectId}/scans/${activeScanId}/progress`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -71,6 +77,8 @@ export function useScanProgress(
             setProgress(snapshot);
 
             if (TERMINAL_SCAN_STATUSES.includes(snapshot.status)) {
+              void queryClient.invalidateQueries({ queryKey: scanKeys.project(activeProjectId) });
+              void queryClient.invalidateQueries({ queryKey: findingKeys.project(activeProjectId) });
               abortController.abort();
             }
           });
@@ -89,7 +97,7 @@ export function useScanProgress(
     return () => {
       abortController.abort();
     };
-  }, [enabled, projectId, scanId]);
+  }, [enabled, projectId, queryClient, scanId]);
 
   return {
     progress,

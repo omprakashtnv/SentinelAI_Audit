@@ -8,6 +8,7 @@ import {
   deleteFinding,
   dismissFinding,
   getFinding,
+  getFindingExplanation,
   getFindings,
   resolveFinding,
   updateFinding,
@@ -123,6 +124,11 @@ projectRouter.get(
   "/:projectId/findings",
   validateRequest({ params: findingProjectParamsSchema, query: getFindingsQuerySchema }),
   asyncHandler(getFindings),
+);
+projectRouter.get(
+  "/:projectId/findings/:findingId/explanation",
+  validateRequest({ params: findingParamsSchema }),
+  asyncHandler(getFindingExplanation),
 );
 projectRouter.get(
   "/:projectId/findings/:findingId",

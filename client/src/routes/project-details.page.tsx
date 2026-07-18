@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, FileArchive, FolderGit2, Github, Pencil, Trash2, UploadCloud } from "lucide-react";
+import { ArrowLeft, ExternalLink, FileArchive, FolderGit2, Github, Pencil, ShieldAlert, Trash2, UploadCloud } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -79,6 +79,12 @@ export function ProjectDetailsPage() {
             </Link>
           </Button>
           <Button asChild type="button" variant="outline">
+            <Link to={`/projects/${project.id}/security`}>
+              <ShieldAlert className="size-4" aria-hidden="true" />
+              Security
+            </Link>
+          </Button>
+          <Button asChild type="button" variant="outline">
             <Link to={`/projects/${project.id}/edit`}>
               <Pencil className="size-4" aria-hidden="true" />
               Edit
@@ -133,7 +139,7 @@ function RepositoryCard({
 }: {
   projectId: string;
   projectRepositoryUrl: string | null;
-  source: RepositorySource | undefined;
+  source: RepositorySource | null | undefined;
   isLoading: boolean;
 }) {
   return (

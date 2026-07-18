@@ -25,6 +25,38 @@ export type Finding = {
   updatedAt: string;
 };
 
+export type FindingCodeExample = {
+  language: "typescript" | "tsx" | "javascript" | "prisma";
+  vulnerable: string;
+  secure: string;
+};
+
+export type FindingReference = {
+  title: string;
+  url: string;
+};
+
+export type FindingExplanation = {
+  title: string;
+  description: string;
+  whyItMatters: string;
+  businessImpact: string;
+  technicalImpact: string;
+  riskLevel: {
+    severity: FindingSeverity;
+    label: string;
+    score: number;
+  };
+  owasp: string | null;
+  recommendation: string;
+  codeExample: FindingCodeExample | null;
+  references: FindingReference[];
+  confidence: {
+    label: string;
+    score: number;
+  };
+};
+
 export type FindingListMeta = {
   page: number;
   limit: number;
@@ -40,4 +72,3 @@ export type FindingListFilters = {
   scanId?: string;
   search?: string;
 };
-

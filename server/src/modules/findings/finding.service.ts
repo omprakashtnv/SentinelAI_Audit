@@ -1,4 +1,5 @@
 import { ApiError } from "../../shared/errors/api-error";
+import { findingExplanationService, FindingExplanationService, type FindingExplanation } from "../finding-explanation";
 import { ProjectRepository, projectRepository } from "../projects/project.repository";
 import { ScanRepository, scanRepository } from "../scans/scan.repository";
 import { FindingRepository, findingRepository } from "./finding.repository";
@@ -10,6 +11,7 @@ export class FindingService {
     private readonly projects: ProjectRepository,
     private readonly scans: ScanRepository,
     private readonly findings: FindingRepository,
+    private readonly explanations: FindingExplanationService,
   ) {}
 
   public async createFinding(ownerId: string, projectId: string, input: CreateFindingInput): Promise<PublicFinding> {
@@ -47,6 +49,16 @@ export class FindingService {
     }
 
     return toPublicFinding(finding);
+  }
+
+  public async getFindingExplanation(
+    ownerId: string,
+    projectId: string,
+    findingId: string,
+  ): Promise<FindingExplanation> {
+    const finding = await this.getFinding(ownerId, projectId, findingId);
+
+    return this.explanations.explain(finding);
   }
 
   public async updateFinding(
@@ -126,5 +138,9 @@ export class FindingService {
   }
 }
 
-export const findingService = new FindingService(projectRepository, scanRepository, findingRepository);
-
+export const findingService = new FindingService(
+  projectRepository,
+  scanRepository,
+  findingRepository,
+  findingExplanationService,
+);

@@ -6,6 +6,8 @@ import { ApiError } from "../shared/errors/api-error";
 import { sendError } from "../shared/http/api-response";
 import { logger } from "../shared/logger/logger";
 
+const EXPECTED_INFO_ERROR_CODES = new Set(["REPOSITORY_SOURCE_NOT_FOUND"]);
+
 export const errorMiddleware: ErrorRequestHandler = (error, request, response, _next) => {
   const requestId = request.id;
 
@@ -22,7 +24,9 @@ export const errorMiddleware: ErrorRequestHandler = (error, request, response, _
 
   if (error instanceof ApiError) {
     if (error.isOperational) {
-      logger.warn(error.message, {
+      const logLevel = EXPECTED_INFO_ERROR_CODES.has(error.code) ? "info" : "warn";
+
+      logger[logLevel](error.message, {
         code: error.code,
         statusCode: error.statusCode,
         requestId,
@@ -73,4 +77,3 @@ function normalizeUnknownError(error: unknown): Record<string, unknown> {
     value: error,
   };
 }
-

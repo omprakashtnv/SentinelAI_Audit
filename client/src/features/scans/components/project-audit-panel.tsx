@@ -1,5 +1,4 @@
-import { AlertTriangle, CheckCircle2, Loader2, RotateCcw, ShieldCheck, XCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import { AlertTriangle, CheckCircle2, FileCode2, Loader2, RotateCcw, ShieldCheck, TimerReset, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge, type BadgeProps } from "@/components/ui/badge";
@@ -13,10 +12,10 @@ import {
   useProjectScansQuery,
   useRetryProjectScanMutation,
 } from "@/features/scans/scan.hooks";
+import { useRepositorySourceQuery } from "@/features/repository-explorer/repository-explorer.hooks";
 import { useScanProgress } from "@/features/scans/use-scan-progress";
-import { cn } from "@/lib/utils";
 import { ApiClientError } from "@/services/api/api-client";
-import type { Scan, ScanProgressSnapshot, ScanStatus, SecuritySeverity } from "@/types/scan";
+import type { Scan, ScanProgressSnapshot, ScanStatus } from "@/types/scan";
 
 type ProjectAuditPanelProps = {
   projectId: string;
@@ -33,10 +32,12 @@ const ACTIVE_SCAN_STATUSES: ScanStatus[] = [
 
 export function ProjectAuditPanel({ projectId }: ProjectAuditPanelProps) {
   const scansQuery = useProjectScansQuery(projectId);
+  const repositorySourceQuery = useRepositorySourceQuery(projectId);
   const createScanMutation = useCreateProjectScanMutation(projectId);
   const cancelScanMutation = useCancelProjectScanMutation(projectId);
   const retryScanMutation = useRetryProjectScanMutation(projectId);
   const latestScan = scansQuery.data?.scans[0];
+  const hasRepositorySource = Boolean(repositorySourceQuery.data);
   const isActive = latestScan ? ACTIVE_SCAN_STATUSES.includes(latestScan.status) : false;
   const scanProgress = useScanProgress(projectId, latestScan?.id, isActive);
 
@@ -100,13 +101,23 @@ export function ProjectAuditPanel({ projectId }: ProjectAuditPanelProps) {
               Cancel
             </Button>
           ) : null}
-          <Button type="button" disabled={createScanMutation.isPending || isActive} onClick={() => void handleStartScan()}>
+          <Button
+            type="button"
+            disabled={createScanMutation.isPending || isActive || !hasRepositorySource}
+            onClick={() => void handleStartScan()}
+          >
             {createScanMutation.isPending || isActive ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ShieldCheck className="size-4" aria-hidden="true" />}
-            {latestScan ? "Run scan" : "Start scan"}
+            {!hasRepositorySource ? "Attach repository" : latestScan ? "Run scan" : "Start scan"}
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {!hasRepositorySource ? (
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+            Upload a ZIP file or import a GitHub repository before starting a scan.
+          </div>
+        ) : null}
+
         {scansQuery.isError ? (
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             Unable to load scans.
@@ -146,33 +157,30 @@ function ScanDetails({
   const percentage = progress?.percentage ?? scan.progress;
   const currentStep = progress?.currentStep ?? formatStatus(scan.status);
   const currentFile = progress?.currentFile ?? null;
-  const eta = progress?.estimatedTimeRemainingMs ?? null;
   const hasDemoFindings = findings.some((finding) => finding.ruleId.startsWith("demo."));
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 md:grid-cols-4">
-        <Metric label="Status" value={formatStatus(scan.status)} badge={<StatusBadge status={scan.status} />} />
-        <Metric label="Stage" value={currentStep} badge={isProgressConnected ? <Badge variant="success">Live</Badge> : null} />
-        <Metric label="Findings" value={String(summary?.findings ?? findings.length)} />
-        <Metric label="ETA" value={formatDuration(eta)} />
-      </div>
-
-      <div>
-        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Progress</span>
-          <span>{percentage}%</span>
+      <div className="rounded-lg border border-border bg-muted/10 px-4 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={scan.status} />
+              {isProgressConnected ? <Badge variant="success">Live</Badge> : null}
+              <Badge variant="outline">{percentage}%</Badge>
+            </div>
+            <p className="mt-3 text-sm font-medium text-foreground">{currentStep}</p>
+            <p className="mt-1 max-w-3xl break-all text-xs text-muted-foreground">
+              {currentFile ?? "Waiting for file activity"}
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:min-w-80">
+            <ScanFact icon={TimerReset} label="Elapsed" value={formatDuration(scan.elapsedMs)} />
+            <ScanFact icon={FileCode2} label="Files parsed" value={String(scan.parsedFiles || summary?.filesScanned || 0)} />
+          </div>
         </div>
-        <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-background">
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${percentage}%` }} />
-        </div>
-        <div className="mt-3 grid gap-2 rounded-lg border border-border bg-muted/20 px-3 py-3 text-xs text-muted-foreground sm:grid-cols-[160px_1fr]">
-          <span className="font-medium text-foreground">Current step</span>
-          <span>{currentStep}</span>
-          <span className="font-medium text-foreground">Current file</span>
-          <span className="break-all">{currentFile ?? "Waiting for file activity"}</span>
-          <span className="font-medium text-foreground">Elapsed</span>
-          <span>{formatDuration(scan.elapsedMs)}</span>
         </div>
       </div>
 
@@ -188,40 +196,19 @@ function ScanDetails({
         </div>
       ) : null}
 
-      {summary ? <SeveritySummary summary={summary} /> : null}
       <FindingsDashboard projectId={projectId} />
     </div>
   );
 }
 
-function Metric({ label, value, badge }: { label: string; value: string; badge?: ReactNode }) {
+function ScanFact({ icon: Icon, label, value }: { icon: typeof TimerReset; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/20 px-3 py-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="mt-2 flex items-center gap-2">
-        <span className="text-sm font-semibold text-foreground">{value}</span>
-        {badge}
+    <div className="rounded-md border border-border bg-background px-3 py-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Icon className="size-3.5" aria-hidden="true" />
+        {label}
       </div>
-    </div>
-  );
-}
-
-function SeveritySummary({ summary }: { summary: NonNullable<Scan["securitySummary"]> }) {
-  return (
-    <div className="grid gap-3 sm:grid-cols-4">
-      <SeverityMetric severity="CRITICAL" value={summary.critical} />
-      <SeverityMetric severity="HIGH" value={summary.high} />
-      <SeverityMetric severity="MEDIUM" value={summary.medium} />
-      <SeverityMetric severity="LOW" value={summary.low} />
-    </div>
-  );
-}
-
-function SeverityMetric({ severity, value }: { severity: SecuritySeverity; value: number }) {
-  return (
-    <div className={cn("rounded-lg border px-3 py-3", severityTone(severity))}>
-      <p className="text-xs font-medium">{severity}</p>
-      <p className="mt-1 text-xl font-semibold">{value}</p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
@@ -236,18 +223,6 @@ function StatusBadge({ status }: { status: ScanStatus }) {
       {formatStatus(status)}
     </Badge>
   );
-}
-
-function severityTone(severity: SecuritySeverity) {
-  if (severity === "CRITICAL" || severity === "HIGH") {
-    return "border-destructive/20 bg-destructive/5 text-destructive";
-  }
-
-  if (severity === "MEDIUM") {
-    return "border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-300";
-  }
-
-  return "border-border bg-muted/20 text-muted-foreground";
 }
 
 function formatStatus(status: ScanStatus) {
