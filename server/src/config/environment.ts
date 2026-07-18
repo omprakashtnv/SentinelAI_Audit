@@ -51,6 +51,21 @@ if (!parsedEnvironment.success) {
 }
 
 const env = parsedEnvironment.data;
+const configuredCorsOrigins = env.CORS_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean);
+const developmentCorsOrigins =
+  env.NODE_ENV === "development"
+    ? configuredCorsOrigins.flatMap((origin) => {
+        if (origin.startsWith("http://localhost:")) {
+          return [origin, origin.replace("http://localhost:", "http://127.0.0.1:")];
+        }
+
+        if (origin.startsWith("http://127.0.0.1:")) {
+          return [origin, origin.replace("http://127.0.0.1:", "http://localhost:")];
+        }
+
+        return [origin];
+      })
+    : configuredCorsOrigins;
 
 export const environment = {
   nodeEnv: env.NODE_ENV,
@@ -59,7 +74,7 @@ export const environment = {
   isProduction: env.NODE_ENV === "production",
   port: env.PORT,
   databaseUrl: env.DATABASE_URL,
-  corsOrigins: env.CORS_ORIGIN.split(",").map((origin) => origin.trim()),
+  corsOrigins: [...new Set(developmentCorsOrigins)],
   logLevel: env.LOG_LEVEL,
   requestBodyLimit: env.REQUEST_BODY_LIMIT,
   rateLimit: {

@@ -65,6 +65,7 @@ export function EditProjectPage() {
             submitLabel="Save changes"
             isSubmitting={updateMutation.isPending}
             errorMessage={errorMessage}
+            showRepositoryUrl={false}
             onSubmit={handleSubmit}
           />
         </CardContent>
@@ -72,4 +73,3 @@ export function EditProjectPage() {
     </div>
   );
 }
-

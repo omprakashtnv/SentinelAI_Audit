@@ -43,6 +43,7 @@ export function CreateProjectPage() {
             submitLabel="Create project"
             isSubmitting={createMutation.isPending}
             errorMessage={errorMessage}
+            showRepositoryUrl={false}
             onSubmit={handleSubmit}
           />
         </CardContent>
@@ -50,4 +51,3 @@ export function CreateProjectPage() {
     </div>
   );
 }
-

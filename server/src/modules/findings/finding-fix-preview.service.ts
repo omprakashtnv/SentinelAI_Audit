@@ -245,12 +245,6 @@ export class FindingFixPreviewService {
     explanation: FindingExplanation,
     filePath: string,
   ): CodeDiffLanguage {
-    const language = securityFix?.secureExample.language ?? explanation.codeExample?.language;
-
-    if (language === "typescript" || language === "javascript" || language === "tsx" || language === "prisma") {
-      return language;
-    }
-
     const normalizedPath = filePath.toLowerCase();
 
     if (normalizedPath.endsWith(".tsx")) {
@@ -283,6 +277,12 @@ export class FindingFixPreviewService {
 
     if (normalizedPath.endsWith(".yaml") || normalizedPath.endsWith(".yml")) {
       return "yaml";
+    }
+
+    const language = securityFix?.secureExample.language ?? explanation.codeExample?.language;
+
+    if (language === "typescript" || language === "javascript" || language === "tsx" || language === "prisma") {
+      return language;
     }
 
     return "text";

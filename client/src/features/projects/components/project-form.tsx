@@ -13,6 +13,7 @@ type ProjectFormProps = {
   defaultValues?: ProjectFormValues;
   errorMessage?: string;
   isSubmitting: boolean;
+  showRepositoryUrl?: boolean;
   submitLabel: string;
   onSubmit: (values: ProjectFormValues) => void | Promise<void>;
 };
@@ -21,6 +22,7 @@ export function ProjectForm({
   defaultValues,
   errorMessage,
   isSubmitting,
+  showRepositoryUrl = true,
   submitLabel,
   onSubmit,
 }: ProjectFormProps) {
@@ -43,15 +45,17 @@ export function ProjectForm({
         <FieldError message={form.formState.errors.name?.message} />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="repositoryUrl">Repository URL</Label>
-        <Input
-          id="repositoryUrl"
-          placeholder="https://github.com/acme/sentinelai"
-          {...form.register("repositoryUrl")}
-        />
-        <FieldError message={form.formState.errors.repositoryUrl?.message} />
-      </div>
+      {showRepositoryUrl ? (
+        <div className="space-y-2">
+          <Label htmlFor="repositoryUrl">Repository URL</Label>
+          <Input
+            id="repositoryUrl"
+            placeholder="https://github.com/acme/sentinelai"
+            {...form.register("repositoryUrl")}
+          />
+          <FieldError message={form.formState.errors.repositoryUrl?.message} />
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>

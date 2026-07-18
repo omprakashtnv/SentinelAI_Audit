@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { Finding, FindingSeverity } from "@/types/finding";
 import type { Project } from "@/types/project";
 
-const REPORT_FINDING_LIMIT = 500;
+const REPORT_FINDING_LIMIT = 250;
 const CERTIFICATE_COVERAGE = ["Authentication", "Authorization", "Secrets", "Logging"] as const;
 const CERTIFICATE_SEVERITIES: FindingSeverity[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const CERTIFICATE_SCORE_WEIGHTS: Record<FindingSeverity, number> = {
@@ -129,7 +129,18 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {findingsQuery.isLoading || !certificate ? (
+      {findingsQuery.isError ? (
+        <EmptyState
+          icon={FileCheck2}
+          title="Certificate findings unavailable"
+          description="SentinelAI could not load findings for the selected project."
+          action={
+            <Button type="button" variant="outline" onClick={() => void findingsQuery.refetch()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : findingsQuery.isLoading || !certificate ? (
         <ReportsSkeleton compact />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
