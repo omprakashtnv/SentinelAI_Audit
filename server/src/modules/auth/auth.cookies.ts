@@ -4,8 +4,8 @@ import { environment } from "../../config/environment";
 
 const refreshTokenCookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: environment.isProduction,
-  sameSite: "lax",
+  secure: environment.refreshToken.cookieSecure,
+  sameSite: environment.refreshToken.cookieSameSite,
   path: "/api/auth",
 };
 

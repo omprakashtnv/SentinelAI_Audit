@@ -49,6 +49,7 @@ Backend:
 - [Recommended Dependencies](docs/recommended-dependencies.md)
 - [Development Workflow](docs/development-workflow.md)
 - [VSCode Extensions](docs/vscode-extensions.md)
+- [Vercel + Railway Deployment](docs/vercel-railway-deployment.md)
 
 ## Foundation Principles
 

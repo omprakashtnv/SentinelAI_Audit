@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "SentinelAI React dashboard foundation",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

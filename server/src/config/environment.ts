@@ -17,6 +17,7 @@ const environmentSchema = z.object({
   JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(15 * 60),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(7),
   REFRESH_TOKEN_COOKIE_NAME: z.string().min(1).default("sentinelai_refresh_token"),
+  REFRESH_TOKEN_COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).optional(),
   BCRYPT_SALT_ROUNDS: z.coerce.number().int().min(10).max(15).default(12),
   UPLOAD_TEMP_DIR: z.string().min(1).default("tmp/uploads/zips"),
   UPLOAD_EXTRACT_DIR: z.string().min(1).default("tmp/uploads/extracted"),
@@ -28,7 +29,10 @@ const environmentSchema = z.object({
   REPOSITORY_PARSER_MAX_FILE_SIZE_BYTES: z.coerce.number().int().positive().default(1024 * 1024),
   REPOSITORY_PARSER_MAX_FILES: z.coerce.number().int().positive().default(20_000),
   REPOSITORY_PARSER_MAX_DEPTH: z.coerce.number().int().positive().default(50),
-  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.preprocess(
+    (value) => (typeof value === "string" && value.trim().length === 0 ? undefined : value),
+    z.string().min(1).optional(),
+  ),
   OPENAI_MODEL: z.string().min(1).default("gpt-4.1"),
   OPENAI_TIMEOUT_MS: z.coerce.number().int().positive().default(60_000),
   OPENAI_MAX_RETRIES: z.coerce.number().int().min(0).max(5).default(2),
@@ -51,6 +55,7 @@ if (!parsedEnvironment.success) {
 }
 
 const env = parsedEnvironment.data;
+const refreshTokenCookieSameSite = env.REFRESH_TOKEN_COOKIE_SAME_SITE ?? (env.NODE_ENV === "production" ? "none" : "lax");
 const configuredCorsOrigins = env.CORS_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean);
 const developmentCorsOrigins =
   env.NODE_ENV === "development"
@@ -90,6 +95,8 @@ export const environment = {
     ttlDays: env.REFRESH_TOKEN_TTL_DAYS,
     ttlMs: env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
     cookieName: env.REFRESH_TOKEN_COOKIE_NAME,
+    cookieSameSite: refreshTokenCookieSameSite,
+    cookieSecure: env.NODE_ENV === "production" || refreshTokenCookieSameSite === "none",
   },
   security: {
     bcryptSaltRounds: env.BCRYPT_SALT_ROUNDS,
