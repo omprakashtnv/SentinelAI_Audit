@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 
+import { HighlightText } from "@/components/data-display/highlight-text";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ import {
   useResolveFindingMutation,
 } from "@/features/findings/finding.hooks";
 import { useProjectScansQuery } from "@/features/scans/scan.hooks";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 import { ApiClientError } from "@/services/api/api-client";
 import type { Finding, FindingSeverity, FindingStatus } from "@/types/finding";
@@ -73,10 +75,11 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
   const [statusFilter, setStatusFilter] = useState<FindingStatus | "ALL">("ALL");
   const [sortMode, setSortMode] = useState<SortMode>("severity");
   const [findingsPage, setFindingsPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(search, 350);
   const findingFilters = {
     status: statusFilter === "ALL" ? undefined : statusFilter,
     severity: severityFilter === "ALL" ? undefined : severityFilter,
-    search: search.trim() || undefined,
+    search: debouncedSearch.trim() || undefined,
   };
   const analyticsFindingsQuery = useProjectFindingsQuery(projectId, {
     ...findingFilters,
@@ -326,6 +329,7 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
                 <FindingRow
                   key={finding.id}
                   finding={finding}
+                  searchQuery={search}
                   onDismiss={(findingId) => void handleDismiss(findingId)}
                   onResolve={(findingId) => void handleResolve(findingId)}
                   onDelete={(findingId) => void handleDelete(findingId)}
@@ -558,11 +562,13 @@ function EmptyPanel({ label }: { label: string }) {
 
 function FindingRow({
   finding,
+  searchQuery,
   onDismiss,
   onResolve,
   onDelete,
 }: {
   finding: Finding;
+  searchQuery: string;
   onDismiss: (findingId: string) => void;
   onResolve: (findingId: string) => void;
   onDelete: (findingId: string) => void;
@@ -574,12 +580,20 @@ function FindingRow({
           <div className="flex flex-wrap items-center gap-2">
             <FindingSeverityBadge severity={finding.severity} />
             <Badge variant="outline">{formatFindingOption(finding.status)}</Badge>
-            <h4 className="text-sm font-semibold text-foreground">{finding.title}</h4>
+            <h4 className="text-sm font-semibold text-foreground">
+              <HighlightText query={searchQuery}>{finding.title}</HighlightText>
+            </h4>
           </div>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{finding.description}</p>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+            <HighlightText query={searchQuery}>{finding.description}</HighlightText>
+          </p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="break-all">{finding.file}:{finding.line}</span>
-            <span>{finding.owasp ?? "Unmapped OWASP"}</span>
+            <span className="break-all">
+              <HighlightText query={searchQuery}>{`${finding.file}:${finding.line}`}</HighlightText>
+            </span>
+            <span>
+              <HighlightText query={searchQuery}>{finding.owasp ?? "Unmapped OWASP"}</HighlightText>
+            </span>
             <span>{finding.confidence ?? "UNKNOWN"} confidence</span>
           </div>
         </div>

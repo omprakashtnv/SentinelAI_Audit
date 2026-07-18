@@ -1,5 +1,5 @@
 import { Plus, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import { ProjectListSkeleton } from "@/features/projects/components/project-list
 import { ProjectPagination } from "@/features/projects/components/project-pagination";
 import { ProjectTable } from "@/features/projects/components/project-table";
 import { useDeleteProjectMutation, useProjectsQuery } from "@/features/projects/project.hooks";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { ApiClientError } from "@/services/api/api-client";
 import type { Project } from "@/types/project";
 
@@ -20,6 +21,7 @@ export function ProjectsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState(searchParams.get("search") ?? "");
   const [projectPendingDelete, setProjectPendingDelete] = useState<Project | null>(null);
+  const debouncedSearchValue = useDebouncedValue(searchValue, 350);
   const page = Number(searchParams.get("page") ?? "1");
   const limit = Number(searchParams.get("limit") ?? "10");
   const search = searchParams.get("search") ?? "";
@@ -35,23 +37,36 @@ export function ProjectsPage() {
   const projectsQuery = useProjectsQuery(filters);
   const deleteMutation = useDeleteProjectMutation();
 
+  const updateParams = useCallback(
+    (next: Record<string, string | number | undefined>) => {
+      const params = new URLSearchParams(searchParams);
+
+      Object.entries(next).forEach(([key, value]) => {
+        if (value === undefined || value === "") {
+          params.delete(key);
+        } else {
+          params.set(key, String(value));
+        }
+      });
+
+      setSearchParams(params);
+    },
+    [searchParams, setSearchParams],
+  );
+
   useEffect(() => {
     setSearchValue(search);
   }, [search]);
 
-  function updateParams(next: Record<string, string | number | undefined>) {
-    const params = new URLSearchParams(searchParams);
+  useEffect(() => {
+    const normalizedSearchValue = debouncedSearchValue.trim();
 
-    Object.entries(next).forEach(([key, value]) => {
-      if (value === undefined || value === "") {
-        params.delete(key);
-      } else {
-        params.set(key, String(value));
-      }
-    });
+    if (normalizedSearchValue === search.trim()) {
+      return;
+    }
 
-    setSearchParams(params);
-  }
+    updateParams({ search: normalizedSearchValue || undefined, page: 1 });
+  }, [debouncedSearchValue, search, updateParams]);
 
   async function handleDelete() {
     if (!projectPendingDelete) {
@@ -150,6 +165,7 @@ export function ProjectsPage() {
             <div className="overflow-hidden rounded-lg border border-border">
               <ProjectTable
                 projects={projectsQuery.data.projects}
+                searchQuery={searchValue}
                 onDelete={(project) => setProjectPendingDelete(project)}
                 deletingProjectId={deleteMutation.variables}
               />

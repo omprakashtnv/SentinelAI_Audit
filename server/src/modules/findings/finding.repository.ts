@@ -73,12 +73,15 @@ export class FindingRepository {
       ...(query.status ? { status: query.status } : {}),
       ...(query.severity ? { severity: query.severity } : {}),
       ...(query.scanId ? { scanId: query.scanId } : {}),
+      ...(query.category ? { category: query.category } : {}),
+      ...(query.owasp ? { owasp: query.owasp } : {}),
       ...(query.search
         ? {
             OR: [
               { title: { contains: query.search, mode: "insensitive" } },
               { description: { contains: query.search, mode: "insensitive" } },
               { file: { contains: query.search, mode: "insensitive" } },
+              { category: { contains: query.search, mode: "insensitive" } },
               { owasp: { contains: query.search, mode: "insensitive" } },
             ],
           }
@@ -215,4 +218,3 @@ export class FindingRepository {
 }
 
 export const findingRepository = new FindingRepository();
-

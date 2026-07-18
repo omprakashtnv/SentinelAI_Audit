@@ -50,6 +50,8 @@ export const getFindingsQuerySchema = z
     status: findingStatusSchema.optional(),
     severity: findingSeveritySchema.optional(),
     scanId: z.string().uuid("Scan ID must be a valid UUID.").optional(),
+    category: z.string().trim().min(1).max(80).optional(),
+    owasp: z.string().trim().min(1).max(160).optional(),
     search: z.string().trim().min(1).max(120).optional(),
   })
   .strict();

@@ -70,5 +70,7 @@ export type FindingListFilters = {
   status?: FindingStatus;
   severity?: FindingSeverity;
   scanId?: string;
+  category?: string;
+  owasp?: string;
   search?: string;
 };

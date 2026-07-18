@@ -63,6 +63,8 @@ export async function getProjectFindings(
       status: filters.status,
       severity: filters.severity,
       scanId: filters.scanId,
+      category: filters.category,
+      owasp: filters.owasp,
       search: filters.search,
     },
   });

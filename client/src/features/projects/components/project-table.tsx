@@ -1,17 +1,19 @@
 import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { HighlightText } from "@/components/data-display/highlight-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Project } from "@/types/project";
 
 type ProjectTableProps = {
   projects: Project[];
+  searchQuery?: string;
   onDelete: (project: Project) => void;
   deletingProjectId?: string;
 };
 
-export function ProjectTable({ projects, onDelete, deletingProjectId }: ProjectTableProps) {
+export function ProjectTable({ projects, searchQuery = "", onDelete, deletingProjectId }: ProjectTableProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <div className="hidden grid-cols-[1fr_220px_160px_180px] border-b border-border bg-muted/40 px-4 py-3 text-xs font-medium uppercase text-muted-foreground lg:grid">
@@ -29,10 +31,12 @@ export function ProjectTable({ projects, onDelete, deletingProjectId }: ProjectT
           >
             <div className="min-w-0">
               <Link to={`/projects/${project.id}`} className="font-medium text-foreground hover:underline">
-                {project.name}
+                <HighlightText query={searchQuery}>{project.name}</HighlightText>
               </Link>
               <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
-                {project.description ?? "No description provided."}
+                <HighlightText query={searchQuery} fallback="No description provided.">
+                  {project.description}
+                </HighlightText>
               </p>
             </div>
 
@@ -45,7 +49,9 @@ export function ProjectTable({ projects, onDelete, deletingProjectId }: ProjectT
                   className="inline-flex max-w-full items-center gap-2 truncate text-sm text-primary hover:underline"
                 >
                   <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">Repository</span>
+                  <span className="truncate">
+                    <HighlightText query={searchQuery}>{project.repositoryUrl}</HighlightText>
+                  </span>
                 </a>
               ) : (
                 <Badge variant="outline">No repository</Badge>

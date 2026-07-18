@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { HighlightText } from "@/components/data-display/highlight-text";
 import { EmptyState } from "@/components/feedback/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ import {
   formatFindingOption,
 } from "@/features/findings/finding-display";
 import { useProjectFindingsQuery } from "@/features/findings/finding.hooks";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { cn } from "@/lib/utils";
 import type { Finding, FindingSeverity, FindingStatus } from "@/types/finding";
 
@@ -63,28 +65,33 @@ export function RepositorySecurityView({ projectId }: RepositorySecurityViewProp
   const [groupMode, setGroupMode] = useState<GroupMode>("folder");
   const [sortMode, setSortMode] = useState<SortMode>("severity");
   const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(search, 350);
+  const filterOptionsQuery = useProjectFindingsQuery(projectId, {
+    page: 1,
+    limit: 250,
+  });
   const findingsQuery = useProjectFindingsQuery(projectId, {
     page,
     limit: REPOSITORY_SECURITY_PAGE_SIZE,
     status: statusFilter === "ALL" ? undefined : statusFilter,
     severity: severityFilter === "ALL" ? undefined : severityFilter,
-    search: search.trim() || undefined,
+    category: categoryFilter === "ALL" ? undefined : categoryFilter,
+    owasp: owaspFilter === "ALL" ? undefined : owaspFilter,
+    search: debouncedSearch.trim() || undefined,
   });
   const rawFindings = findingsQuery.data?.findings ?? [];
-  const categories = useMemo(() => uniqueValues(rawFindings.map((finding) => finding.category ?? "Uncategorized")), [rawFindings]);
-  const owaspValues = useMemo(() => uniqueValues(rawFindings.map((finding) => finding.owasp ?? "Unmapped OWASP")), [rawFindings]);
+  const filterOptionFindings = filterOptionsQuery.data?.findings ?? [];
+  const categories = useMemo(
+    () => uniqueValues(filterOptionFindings.map((finding) => finding.category).filter(isPresent)),
+    [filterOptionFindings],
+  );
+  const owaspValues = useMemo(
+    () => uniqueValues(filterOptionFindings.map((finding) => finding.owasp).filter(isPresent)),
+    [filterOptionFindings],
+  );
   const filteredFindings = useMemo(
-    () =>
-      sortFindings(
-        rawFindings.filter((finding) => {
-          const category = finding.category ?? "Uncategorized";
-          const owasp = finding.owasp ?? "Unmapped OWASP";
-
-          return (categoryFilter === "ALL" || category === categoryFilter) && (owaspFilter === "ALL" || owasp === owaspFilter);
-        }),
-        sortMode,
-      ),
-    [categoryFilter, owaspFilter, rawFindings, sortMode],
+    () => sortFindings(rawFindings, sortMode),
+    [rawFindings, sortMode],
   );
   const groupedFindings = useMemo(() => groupFindings(filteredFindings, groupMode), [filteredFindings, groupMode]);
   const summary = useMemo(() => summarizeFindings(filteredFindings), [filteredFindings]);
@@ -207,7 +214,7 @@ export function RepositorySecurityView({ projectId }: RepositorySecurityViewProp
           {filteredFindings.length > 0 ? (
             <div className="overflow-hidden border-y border-border">
               {groupedFindings.map((group, index) => (
-                <FindingGroup key={group.key} group={group} showSeparator={index > 0} />
+                <FindingGroup key={group.key} group={group} searchQuery={search} showSeparator={index > 0} />
               ))}
             </div>
           ) : (
@@ -244,9 +251,11 @@ function SecurityMetric({ label, value, tone }: { label: string; value: number; 
 
 function FindingGroup({
   group,
+  searchQuery,
   showSeparator,
 }: {
   group: { key: string; label: string; findings: Finding[] };
+  searchQuery: string;
   showSeparator: boolean;
 }) {
   return (
@@ -254,21 +263,23 @@ function FindingGroup({
       {showSeparator ? <Separator /> : null}
       <div className="flex items-center justify-between gap-3 bg-muted/30 px-4 py-3">
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold text-foreground">{group.label}</h2>
+          <h2 className="truncate text-sm font-semibold text-foreground">
+            <HighlightText query={searchQuery}>{group.label}</HighlightText>
+          </h2>
           <p className="mt-1 text-xs text-muted-foreground">{group.findings.length} findings</p>
         </div>
         <SeverityStack findings={group.findings} />
       </div>
       <div className="divide-y divide-border">
         {group.findings.map((finding) => (
-          <FindingRow key={finding.id} finding={finding} />
+          <FindingRow key={finding.id} finding={finding} searchQuery={searchQuery} />
         ))}
       </div>
     </section>
   );
 }
 
-function FindingRow({ finding }: { finding: Finding }) {
+function FindingRow({ finding, searchQuery }: { finding: Finding; searchQuery: string }) {
   return (
     <Link
       to={`/projects/${finding.projectId}/findings/${finding.id}`}
@@ -279,13 +290,25 @@ function FindingRow({ finding }: { finding: Finding }) {
           <div className="flex flex-wrap items-center gap-2">
             <FindingSeverityBadge severity={finding.severity} />
             <Badge variant="outline">{formatFindingOption(finding.status)}</Badge>
-            {finding.category ? <Badge variant="secondary">{formatFindingOption(finding.category)}</Badge> : null}
+            {finding.category ? (
+              <Badge variant="secondary">
+                <HighlightText query={searchQuery}>{formatFindingOption(finding.category)}</HighlightText>
+              </Badge>
+            ) : null}
           </div>
-          <h3 className="mt-2 text-sm font-semibold text-foreground">{finding.title}</h3>
-          <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">{finding.description}</p>
+          <h3 className="mt-2 text-sm font-semibold text-foreground">
+            <HighlightText query={searchQuery}>{finding.title}</HighlightText>
+          </h3>
+          <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
+            <HighlightText query={searchQuery}>{finding.description}</HighlightText>
+          </p>
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="break-all">{finding.file}:{finding.line}</span>
-            <span>{finding.owasp ?? "Unmapped OWASP"}</span>
+            <span className="break-all">
+              <HighlightText query={searchQuery}>{`${finding.file}:${finding.line}`}</HighlightText>
+            </span>
+            <span>
+              <HighlightText query={searchQuery}>{finding.owasp ?? "Unmapped OWASP"}</HighlightText>
+            </span>
             <span>{finding.confidence ?? "UNKNOWN"} confidence</span>
           </div>
         </div>
@@ -467,6 +490,10 @@ function getFolderName(filePath: string): string {
 
 function uniqueValues(values: string[]): string[] {
   return [...new Set(values)].sort((left, right) => left.localeCompare(right));
+}
+
+function isPresent(value: string | null | undefined): value is string {
+  return Boolean(value);
 }
 
 function RepositorySecuritySkeleton() {
