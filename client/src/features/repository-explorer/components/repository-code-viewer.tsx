@@ -41,7 +41,9 @@ export function RepositoryCodeViewer({
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <FileCode2 className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <p className="truncate text-sm font-medium text-foreground">{selectedFile.relativePath}</p>
+            <p className="truncate text-sm font-medium text-foreground" title={selectedFile.relativePath}>
+              {selectedFile.relativePath}
+            </p>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {formatFileSize(selectedFile.sizeBytes)} · {selectedFile.language} ·{" "}

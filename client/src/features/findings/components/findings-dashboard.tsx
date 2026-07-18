@@ -252,7 +252,7 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
         </DashboardPanel>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-3">
         <DashboardPanel title="Most common vulnerabilities" description="Recurring issue families." icon={FileWarning}>
           <ChartFrame isEmpty={analytics.commonVulnerabilities.length === 0} emptyLabel="No vulnerability patterns">
             <ResponsiveContainer width="100%" height="100%">
@@ -273,7 +273,9 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
               analytics.topCriticalFiles.map((file) => (
                 <div key={file.file} className="rounded-lg border border-border bg-muted/20 px-3 py-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="min-w-0 truncate text-sm font-medium text-foreground">{file.file}</p>
+                    <p className="min-w-0 truncate text-sm font-medium text-foreground" title={file.file}>
+                      {file.file}
+                    </p>
                     <Badge variant={file.critical > 0 ? "destructive" : "warning"}>{file.score}</Badge>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -288,9 +290,13 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
             )}
           </div>
         </DashboardPanel>
+
+        <DashboardPanel title="Recent scans" description="Latest repository scan activity." icon={Clock3}>
+          <RecentScansList scans={analytics.recentScans} />
+        </DashboardPanel>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <div className="grid gap-4">
         <DashboardPanel title="Findings" description="Filtered security findings with direct triage actions." icon={Search}>
           <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative w-full lg:max-w-md">
@@ -346,31 +352,6 @@ export function FindingsDashboard({ projectId }: FindingsDashboardProps) {
           ) : (
             <EmptyPanel label="No findings match this view" />
           )}
-        </DashboardPanel>
-
-        <DashboardPanel title="Recent scans" description="Latest repository scan activity." icon={Clock3}>
-          <div className="space-y-2">
-            {analytics.recentScans.length > 0 ? (
-              analytics.recentScans.map((scan) => (
-                <div key={scan.id} className="rounded-lg border border-border bg-muted/20 px-3 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{scan.sourceRef ?? "Repository scan"}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{formatDate(scan.createdAt)}</p>
-                    </div>
-                    <Badge variant={scan.status === "COMPLETED" ? "success" : scan.status === "FAILED" ? "destructive" : "warning"}>
-                      {formatFindingOption(scan.status)}
-                    </Badge>
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                    <div className="h-full rounded-full bg-primary" style={{ width: `${scan.progress}%` }} />
-                  </div>
-                </div>
-              ))
-            ) : (
-              <EmptyPanel label="No scans yet" />
-            )}
-          </div>
         </DashboardPanel>
       </div>
     </div>
@@ -515,8 +496,12 @@ function OverviewStat({
       )}
     >
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-2 truncate text-2xl font-semibold text-foreground">{value}</p>
-      <p className="mt-1 truncate text-xs text-muted-foreground">{helper}</p>
+      <p className="mt-2 truncate text-2xl font-semibold text-foreground" title={String(value)}>
+        {value}
+      </p>
+      <p className="mt-1 truncate text-xs text-muted-foreground" title={helper}>
+        {helper}
+      </p>
     </div>
   );
 }
@@ -560,6 +545,35 @@ function EmptyPanel({ label }: { label: string }) {
   );
 }
 
+function RecentScansList({ scans }: { scans: Scan[] }) {
+  if (scans.length === 0) {
+    return <EmptyPanel label="No scans yet" />;
+  }
+
+  return (
+    <div className="space-y-2">
+      {scans.map((scan) => (
+        <div key={scan.id} className="rounded-lg border border-border bg-muted/20 px-3 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground" title={scan.sourceRef ?? "Repository scan"}>
+                {scan.sourceRef ?? "Repository scan"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{formatDate(scan.createdAt)}</p>
+            </div>
+            <Badge variant={scan.status === "COMPLETED" ? "success" : scan.status === "FAILED" ? "destructive" : "warning"}>
+              {formatFindingOption(scan.status)}
+            </Badge>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-primary" style={{ width: `${scan.progress}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FindingRow({
   finding,
   searchQuery,
@@ -573,48 +587,62 @@ function FindingRow({
   onResolve: (findingId: string) => void;
   onDelete: (findingId: string) => void;
 }) {
+  const fileLocation = `${finding.file}:${finding.line}`;
+  const category = finding.category ? formatFindingOption(finding.category) : "Uncategorized";
+  const confidence = finding.confidence ?? "UNKNOWN";
+
   return (
-    <div className="rounded-lg border border-border px-4 py-3 transition-colors hover:bg-muted/30">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-        <div className="min-w-0">
+    <article className="overflow-hidden rounded-lg border border-border bg-background transition-colors hover:bg-muted/25">
+      <div className="grid gap-0 xl:grid-cols-[136px_minmax(0,1fr)_220px]">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/20 px-4 py-3 xl:flex-col xl:items-start xl:border-b-0 xl:border-r">
+          <FindingSeverityBadge severity={finding.severity} />
+          <Badge variant="outline">{formatFindingOption(finding.status)}</Badge>
+          <span className="text-xs font-medium text-muted-foreground">{confidence} confidence</span>
+        </div>
+
+        <div className="min-w-0 px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <FindingSeverityBadge severity={finding.severity} />
-            <Badge variant="outline">{formatFindingOption(finding.status)}</Badge>
-            <h4 className="text-sm font-semibold text-foreground">
-              <HighlightText query={searchQuery}>{finding.title}</HighlightText>
-            </h4>
-          </div>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-            <HighlightText query={searchQuery}>{finding.description}</HighlightText>
-          </p>
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-            <span className="break-all">
-              <HighlightText query={searchQuery}>{`${finding.file}:${finding.line}`}</HighlightText>
-            </span>
-            <span>
+            <Badge variant="secondary" title={category}>
+              {category}
+            </Badge>
+            <span className="text-xs text-muted-foreground" title={finding.owasp ?? "Unmapped OWASP"}>
               <HighlightText query={searchQuery}>{finding.owasp ?? "Unmapped OWASP"}</HighlightText>
             </span>
-            <span>{finding.confidence ?? "UNKNOWN"} confidence</span>
+          </div>
+          <h4 className="mt-2 text-sm font-semibold leading-6 text-foreground" title={finding.title}>
+            <HighlightText query={searchQuery}>{finding.title}</HighlightText>
+          </h4>
+          <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground" title={finding.description}>
+            <HighlightText query={searchQuery}>{finding.description}</HighlightText>
+          </p>
+          <div className="mt-3 rounded-md border border-border bg-muted/15 px-3 py-2 text-xs text-muted-foreground">
+            <span className="block break-all" title={fileLocation}>
+              <HighlightText query={searchQuery}>{fileLocation}</HighlightText>
+            </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => onResolve(finding.id)}>
-            <CheckCircle2 className="size-3.5" aria-hidden="true" />
-            Resolve
-          </Button>
-          <Button asChild type="button" size="sm" variant="outline">
+
+        <div className="flex flex-col gap-2 border-t border-border bg-muted/10 px-4 py-3 xl:border-l xl:border-t-0">
+          <Button asChild type="button" size="sm" variant="outline" className="w-full justify-center">
             <Link to={`/projects/${finding.projectId}/findings/${finding.id}`}>Details</Link>
           </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => onDismiss(finding.id)}>
-            <AlertTriangle className="size-3.5" aria-hidden="true" />
-            Dismiss
-          </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => onDelete(finding.id)}>
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-1">
+            <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => onResolve(finding.id)}>
+              <CheckCircle2 className="size-3.5" aria-hidden="true" />
+              Resolve
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="justify-center" onClick={() => onDismiss(finding.id)}>
+              <AlertTriangle className="size-3.5" aria-hidden="true" />
+              Dismiss
+            </Button>
+          </div>
+          <Button type="button" size="sm" variant="ghost" className="w-full justify-center text-muted-foreground" onClick={() => onDelete(finding.id)}>
             <Trash2 className="size-3.5" aria-hidden="true" />
+            Delete
           </Button>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 

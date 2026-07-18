@@ -30,10 +30,13 @@ export function ProjectTable({ projects, searchQuery = "", onDelete, deletingPro
             className="grid gap-4 px-4 py-4 lg:grid-cols-[1fr_220px_160px_180px] lg:items-center"
           >
             <div className="min-w-0">
-              <Link to={`/projects/${project.id}`} className="font-medium text-foreground hover:underline">
+              <Link to={`/projects/${project.id}`} className="font-medium text-foreground hover:underline" title={project.name}>
                 <HighlightText query={searchQuery}>{project.name}</HighlightText>
               </Link>
-              <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
+              <p
+                className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground"
+                title={project.description ?? "No description provided."}
+              >
                 <HighlightText query={searchQuery} fallback="No description provided.">
                   {project.description}
                 </HighlightText>
@@ -47,6 +50,7 @@ export function ProjectTable({ projects, searchQuery = "", onDelete, deletingPro
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex max-w-full items-center gap-2 truncate text-sm text-primary hover:underline"
+                  title={project.repositoryUrl}
                 >
                   <ExternalLink className="size-4 shrink-0" aria-hidden="true" />
                   <span className="truncate">
@@ -72,6 +76,7 @@ export function ProjectTable({ projects, searchQuery = "", onDelete, deletingPro
                 variant="ghost"
                 size="icon"
                 aria-label={`Delete ${project.name}`}
+                title={`Delete ${project.name}`}
                 disabled={deletingProjectId === project.id}
                 onClick={() => onDelete(project)}
               >

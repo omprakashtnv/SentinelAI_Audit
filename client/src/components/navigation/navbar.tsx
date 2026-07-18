@@ -98,12 +98,19 @@ export function Navbar({ onOpenNavigation }: NavbarProps) {
           <Button asChild type="button" variant="outline" className="hidden sm:inline-flex">
             <Link to="/projects/new">New project</Link>
           </Button>
-          <Button asChild type="button" variant="ghost" size="icon" aria-label="Open profile">
+          <Button asChild type="button" variant="ghost" size="icon" aria-label="Open profile" title="Open profile">
             <Link to="/profile">
               <User className="size-4" aria-hidden="true" />
             </Link>
           </Button>
-          <Button type="button" variant="ghost" size="icon" aria-label={`Logout ${user?.email ?? ""}`} onClick={() => void logout()}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={`Logout ${user?.email ?? ""}`}
+            title="Logout"
+            onClick={() => void logout()}
+          >
             <LogOut className="size-4" aria-hidden="true" />
           </Button>
         </div>

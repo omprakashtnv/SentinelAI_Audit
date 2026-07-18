@@ -104,6 +104,7 @@ function RepositoryTreeItem({
         )}
         style={{ paddingLeft: `${depth * 14 + 12}px` }}
         onClick={() => onSelectFile(node.metadata)}
+        title={node.relativePath}
       >
         <FileIcon className="size-4 shrink-0" aria-hidden="true" />
         <span className="truncate">{node.name}</span>
@@ -123,7 +124,7 @@ function RepositoryTreeItem({
         className="h-8 w-full justify-start gap-1 rounded-none px-3 text-sm font-medium text-foreground hover:bg-accent"
         style={{ paddingLeft: `${depth * 14 + 8}px` }}
         onClick={() => onToggleDirectory(node.relativePath)}
-        title={isExpanded ? "Collapse folder" : "Expand folder"}
+        title={`${isExpanded ? "Collapse" : "Expand"} ${node.relativePath || node.name}`}
       >
         <ChevronIcon className="size-4 text-muted-foreground" aria-hidden="true" />
         <FolderIcon className="size-4 text-muted-foreground" aria-hidden="true" />

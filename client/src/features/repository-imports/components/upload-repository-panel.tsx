@@ -290,6 +290,7 @@ function SegmentedSourcePicker({
             key={option.value}
             type="button"
             disabled={disabled}
+            title={option.label}
             className={cn(
               "relative flex h-9 items-center justify-center gap-2 rounded-sm text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-60",
               isSelected ? "text-foreground" : "text-muted-foreground hover:text-foreground",

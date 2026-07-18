@@ -103,8 +103,13 @@ export function DashboardPage() {
                     className="flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">{project.name}</p>
-                      <p className="mt-1 truncate text-xs text-muted-foreground">
+                      <p className="truncate text-sm font-medium text-foreground" title={project.name}>
+                        {project.name}
+                      </p>
+                      <p
+                        className="mt-1 truncate text-xs text-muted-foreground"
+                        title={project.repositoryUrl ?? "No repository linked"}
+                      >
                         {project.repositoryUrl ?? "No repository linked"}
                       </p>
                     </div>
@@ -170,4 +175,3 @@ function formatDate(value: string) {
     year: "numeric",
   }).format(new Date(value));
 }
-

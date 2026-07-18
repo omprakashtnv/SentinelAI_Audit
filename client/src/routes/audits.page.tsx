@@ -67,10 +67,15 @@ export function AuditsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <FolderKanban className="size-4 text-muted-foreground" aria-hidden="true" />
-                    <p className="truncate text-sm font-semibold text-foreground">{project.name}</p>
+                    <p className="truncate text-sm font-semibold text-foreground" title={project.name}>
+                      {project.name}
+                    </p>
                     <Badge variant="success">Active</Badge>
                   </div>
-                  <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
+                  <p
+                    className="mt-1 line-clamp-1 text-sm text-muted-foreground"
+                    title={project.description ?? "No description provided."}
+                  >
                     {project.description ?? "No description provided."}
                   </p>
                 </div>
